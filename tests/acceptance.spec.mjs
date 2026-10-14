@@ -54,24 +54,25 @@ test('over 30 minutes needs a second tap', async ({ page }) => {
   await expect(page.locator('#s2')).not.toHaveClass(/locked/);
 });
 
-test('25 minute recording has no gap or duplicate at 10 minute boundaries', async ({ page, baseURL }) => {
+test('25 minute recording has no gap or duplicate at the segment boundaries', async ({ page, baseURL }) => {
   test.setTimeout(40 * 60 * 1000);
   const net = track(page, baseURL);
-  const text = await runTranscribe(page, fx('long-25min.mp3'), 'base');
+  await runTranscribe(page, fx('long-25min.mp3'), 'base');
   await page.check('#tsToggle');
-  const lines = (await page.locator('#transcript').textContent()).split('\n');
-  const markers = [];
-  for (const m of text.matchAll(/marker (\d+)/g)) markers.push(+m[1]);
-  // Whisper occasionally mishears a number, so check that markers increase and none repeat.
-  const dupes = markers.filter((n, i) => markers.indexOf(n) !== i);
-  let backwards = 0; for (let i = 1; i < markers.length; i++) if (markers[i] < markers[i - 1]) backwards++;
-  const around = (sec) => lines.filter((l) => { const m = /^\[(\d+):(\d+)\]/.exec(l); if (!m) return false; const t = +m[1] * 60 + +m[2]; return t > sec - 25 && t < sec + 25; });
-  console.log('markers', markers.length, 'first', markers[0], 'last', markers[markers.length - 1], 'dupes', dupes, 'backwards', backwards);
-  console.log('around 600 s:\n' + around(600).join('\n'));
-  console.log('around 1200 s:\n' + around(1200).join('\n'));
-  expect(dupes).toEqual([]);
-  expect(backwards).toBe(0);
-  expect(markers.length).toBeGreaterThan(300);
+  const lines = (await page.locator('#transcript').textContent()).split('\n')
+    .map((l) => { const m = /^\[(\d+):(\d+)\] (.*)$/.exec(l); return m ? { t: +m[1] * 60 + +m[2], text: m[3] } : null; })
+    .filter(Boolean);
+  // The fixture speaks one sentence about every 7 seconds with no long pauses. Around each 10 minute
+  // mark, a gap over 15 s between consecutive lines means lost speech; a repeated line means a duplicate.
+  for (const b of [600, 1200]) {
+    const win = lines.filter((l) => l.t > b - 60 && l.t < b + 60);
+    console.log('around ' + b + ' s:\n' + win.map((l) => l.t + ' ' + l.text.slice(0, 70)).join('\n'));
+    for (let k = 1; k < win.length; k++) expect(win[k].t - win[k - 1].t, 'gap near ' + b + ' s').toBeLessThan(15);
+    const texts = win.map((l) => l.text.toLowerCase());
+    expect(texts.filter((x, k) => texts.indexOf(x) !== k), 'duplicate near ' + b + ' s').toEqual([]);
+    expect(win.length).toBeGreaterThan(10);
+  }
+  expect(lines[lines.length - 1].t).toBeGreaterThan(1440);
   expect(net.bad).toEqual([]);
 });
 

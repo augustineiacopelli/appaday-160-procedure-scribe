@@ -738,20 +738,22 @@ function collapseRepeats(text) {
   }
   return w.join(' ');
 }
-function absChunks(chunks, offset, segEnd, isLast, prevEnd) {
-  // Shift to absolute time, keep chunks that start inside this segment's own 10 minutes,
-  // and drop anything the previous segment already covered.
-  const out = [];
+function keepChunks(chunks, offset, segEnd, isLast) {
+  // Shift Whisper's chunk times to absolute time. In a middle segment keep only chunks that ended at
+  // least a second before the cut; the next segment restarts at the last kept end.
+  const kept = [];
+  let lastEnd = offset;
   for (const c of chunks) {
     const s = (c.s == null ? 0 : c.s) + offset;
-    const e = (c.e == null ? segEnd + OVERLAP_SEC : c.e + offset);
+    const e = c.e == null ? null : c.e + offset;
+    if (!isLast && (e == null || e > segEnd - 1)) break;
     const text = collapseRepeats((c.text || '').trim());
-    if (!text) continue;
-    if (!isLast && s >= segEnd) continue;
-    if (s < prevEnd - 0.75) continue;
-    out.push({ startSec: s, endSec: e, text });
+    if (e != null) lastEnd = Math.max(lastEnd, e);
+    if (text) kept.push({ startSec: s, endSec: e == null ? segEnd : e, text });
   }
-  return out;
+  // No usable chunk (silence or one endless sentence): move on by a full segment so the loop progresses.
+  const nextStart = !isLast && lastEnd - offset < 60 ? offset + SEG_SEC : lastEnd;
+  return { kept, nextStart };
 }
 function renderTranscript() {
   const ts = $('tsToggle').checked;
@@ -785,39 +787,45 @@ async function transcribe() {
     if (ui.fallback) { $('st3').textContent = 'Decoding audio with the browser decoder.'; meterIndet('m2'); fallbackSamples = await decodeFallback(); meter('m2', 1); }
     else path = await mountInput();
     const total = state.durationSec;
-    const n = Math.max(1, Math.ceil(total / SEG_SEC));
-    let prevEnd = 0, audioDone = 0, workSec = 0;
-    for (let i = 0; i < n; i++) {
+    // Each segment reads up to 10 minutes plus OVERLAP_SEC. Only chunks that Whisper closed before the
+    // cut are kept, and the next segment starts exactly where the last kept chunk ended, so a sentence
+    // that straddles a boundary is transcribed once, whole, by the following segment.
+    let start = 0, i = 0, audioDone = 0, workSec = 0;
+    const segsLeft = (from) => Math.max(1, Math.ceil((total - from) / SEG_SEC));
+    while (start < total - 0.25) {
       if (!alive()) return;
-      const start = i * SEG_SEC, isLast = i === n - 1;
+      const n = i + segsLeft(start);
       const len = Math.min(SEG_SEC + OVERLAP_SEC, total - start + 1);
+      const isLast = start + len >= total;
       const t0 = performance.now();
       let samples;
       if (fallbackSamples) {
         const a = Math.floor(start * 16000), b = Math.min(fallbackSamples.length, Math.floor((start + len) * 16000));
         samples = fallbackSamples.slice(a, b);
-        $('st2').textContent = 'Segment ' + (i + 1) + ' of ' + n + ' sliced from the decoded audio.'; meter('m2', (i + 1) / n);
+        $('st2').textContent = 'Segment ' + (i + 1) + ' of ' + n + ' sliced from the decoded audio.';
       } else {
         $('st2').textContent = 'Extracting segment ' + (i + 1) + ' of ' + n + '.';
-        samples = await extractSegment(path, start, len, (f) => meter('m2', (i + f) / n));
-        meter('m2', (i + 1) / n);
+        samples = await extractSegment(path, start, len, (f) => meter('m2', Math.min(1, (start + f * len) / total)));
       }
+      meter('m2', Math.min(1, (start + len) / total));
       if (!alive()) return;
       const segAudio = samples.length / 16000;
       $('st3').textContent = 'Transcribing segment ' + (i + 1) + ' of ' + n + '.' + (workSec ? ' About ' + fmtTime((total - audioDone) * (workSec / audioDone)) + ' left.' : '');
-      meter('m3', i / n);
+      meter('m3', start / total);
       const res = await wCall({ type: 'transcribe', samples }, [samples.buffer]);
       samples = null;
       if (!alive()) return;
-      const kept = absChunks(res.chunks, start, start + SEG_SEC, isLast, prevEnd);
-      if (kept.length) prevEnd = kept[kept.length - 1].endSec;
+      const { kept, nextStart } = keepChunks(res.chunks, start, start + segAudio, isLast);
       state.segments.push(...kept);
       rebuildTranscriptText(); renderTranscript(); show($('tOut'), true);
-      audioDone += Math.min(SEG_SEC, segAudio); workSec += (performance.now() - t0) / 1000;
-      const rtf = workSec / audioDone;
-      $('estimate').textContent = 'Measured speed: ' + rtf.toFixed(2) + ' s of work per second of audio.';
-      meter('m3', (i + 1) / n);
+      audioDone += (isLast ? segAudio : nextStart - start); workSec += (performance.now() - t0) / 1000;
+      $('estimate').textContent = 'Measured speed: ' + (workSec / audioDone).toFixed(2) + ' s of work per second of audio.';
+      meter('m3', Math.min(1, nextStart / total));
+      i++;
+      if (isLast) break;
+      start = nextStart;
     }
+    const n = i;
     fallbackSamples = null;
     if (!state.transcriptText) throw new Error('No speech was recognized in this recording.');
     $('st3').textContent = 'Done. ' + state.transcriptText.split(/\s+/).filter(Boolean).length + ' words transcribed in ' + fmtTime(workSec) + '.';
