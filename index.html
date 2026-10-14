@@ -375,6 +375,7 @@ self.onmessage = async ({ data }) => {
 const APP_VERSION = 'v1.0.0';
 const SEG_SEC = 600;          // 10 minute segments
 const OVERLAP_SEC = 5;        // each segment reads 5 s past its end so no word is cut at a boundary
+const BACKOFF_SEC = 2;        // the next segment re-reads 2 s before the cut; repeated words are merged away
 const LONG_SEC = 30 * 60;
 const FALLBACK_MAX = 100 * 1024 * 1024;
 const abs = (p) => new URL(p, location.href).href;
@@ -738,6 +739,22 @@ function collapseRepeats(text) {
   }
   return w.join(' ');
 }
+function trimOverlap(prev, next) {
+  const norm = (w) => w.toLowerCase().replace(/[^a-z0-9']/g, '');
+  const a = prev.split(/\s+/).filter(Boolean).slice(-15).map(norm);
+  const words = next.split(/\s+/).filter(Boolean);
+  const b = words.map(norm);
+  for (let k = Math.min(a.length, b.length, 15); k >= 2; k--) {
+    if (a.slice(a.length - k).join(' ') === b.slice(0, k).join(' ')) return words.slice(k).join(' ');
+  }
+  // Allow the repeated run to start a word or two into the new chunk (a clipped first word).
+  for (let skip = 1; skip <= 2; skip++) {
+    for (let k = Math.min(a.length, b.length - skip, 15); k >= 1; k--) {
+      if (a.slice(a.length - k).join(' ') === b.slice(skip, skip + k).join(' ')) return words.slice(skip + k).join(' ');
+    }
+  }
+  return next;
+}
 function keepChunks(chunks, offset, segEnd, isLast) {
   // Shift Whisper's chunk times to absolute time. In a middle segment keep only chunks that ended at
   // least a second before the cut; the next segment restarts at the last kept end.
@@ -752,7 +769,7 @@ function keepChunks(chunks, offset, segEnd, isLast) {
     if (text) kept.push({ startSec: s, endSec: e == null ? segEnd : e, text });
   }
   // No usable chunk (silence or one endless sentence): move on by a full segment so the loop progresses.
-  const nextStart = !isLast && lastEnd - offset < 60 ? offset + SEG_SEC : lastEnd;
+  const nextStart = !isLast && lastEnd - offset < 60 ? offset + SEG_SEC : Math.max(offset + 60, lastEnd - BACKOFF_SEC);
   return { kept, nextStart };
 }
 function renderTranscript() {
@@ -816,6 +833,11 @@ async function transcribe() {
       samples = null;
       if (!alive()) return;
       const { kept, nextStart } = keepChunks(res.chunks, start, start + segAudio, isLast);
+      if (kept.length && state.segments.length) {
+        // The first words of this segment repeat the tail of the previous one (BACKOFF_SEC); drop them.
+        kept[0].text = trimOverlap(state.segments[state.segments.length - 1].text, kept[0].text);
+        if (!kept[0].text) kept.shift();
+      }
       state.segments.push(...kept);
       rebuildTranscriptText(); renderTranscript(); show($('tOut'), true);
       audioDone += (isLast ? segAudio : nextStart - start); workSec += (performance.now() - t0) / 1000;

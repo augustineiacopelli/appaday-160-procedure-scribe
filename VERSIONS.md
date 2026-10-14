@@ -19,6 +19,8 @@ Single source of truth for what Procedure Scribe runs. `package.json` pins the l
 | whisper-base | onnx-community/whisper-base | 1846881b6b3a3024392c1eea3ad983695bc23925 | same set |
 | whisper-small | not shipped in v1 | none | Deferred until a Hugging Face mirror exists (Open decision 4) |
 
+Runtime configuration decided in Gate 2 (evidence in `spikes/results/`): on a machine with a WebGPU adapter, whisper-base runs its fp32 encoder on WebGPU and its q8 merged decoder on WASM; everything else, including whisper-tiny on every machine, runs q8 on WASM. Transformers.js 4.3.1 failed to load the same local model folder, so the app stays on 3.8.1.
+
 Vendored: 2026-10-14.
 Last smoke test passed by hand: 2026-10-14.
 
