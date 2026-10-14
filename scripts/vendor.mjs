@@ -75,10 +75,11 @@ const META_FILES = [
   'tokenizer.json', 'tokenizer_config.json', 'special_tokens_map.json', 'added_tokens.json',
   'normalizer.json', 'vocab.json', 'merges.txt',
 ];
-// Only the ONNX variants the app uses: fp32 encoder + q4 merged decoder (WebGPU), q8 encoder + decoder (WASM).
+// Only the ONNX variants the app uses: fp32 encoder (WebGPU), q8 encoder (WASM), q8 merged decoder (both).
+// The manifest asked for a q4 merged decoder on WebGPU, but whisper-base's q4 decoder is 123.6 MB, over
+// GitHub's 100 MB per file limit, so WebGPU uses the 53.7 MB q8 decoder instead (decided in Gate 2).
 const ONNX_FILES = [
   'onnx/encoder_model.onnx',
-  'onnx/decoder_model_merged_q4.onnx',
   'onnx/encoder_model_quantized.onnx',
   'onnx/decoder_model_merged_quantized.onnx',
 ];

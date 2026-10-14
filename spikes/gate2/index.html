@@ -39,7 +39,7 @@ self.onmessage = async ({ data }) => {
         const t0 = performance.now();
         pipe = await pipeline('automatic-speech-recognition', 'onnx-community/' + data.model, {
           device: data.device,
-          dtype: data.device === 'webgpu' ? { encoder_model: 'fp32', decoder_model_merged: 'q4' } : 'q8',
+          dtype: data.device === 'webgpu' ? { encoder_model: 'fp32', decoder_model_merged: 'q8' } : 'q8',
         });
         key = k;
         self.postMessage({ type: 'loaded', seconds: (performance.now() - t0) / 1000, version: env.version });
