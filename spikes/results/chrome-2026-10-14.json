@@ -1,0 +1,17 @@
+{
+  "browser": "Chrome 155 on Windows, AMD RDNA 3 WebGPU adapter, live GitHub Pages, no COOP or COEP headers",
+  "gate1": { "input": "synth-18min.wav (207,360,044 bytes, built in page)", "exitCode": 0, "segmentBytes": 38400000, "expectedBytes": 38400000, "extractSeconds": 3, "crossOriginIsolated": false, "requestOrigins": ["https://augustineiacopelli.github.io"], "pass": true },
+  "gate2": [
+    { "lib": "3.8.1", "model": "whisper-base", "device": "webgpu (fp32 encoder, q8 decoder, both on GPU)", "clip": "ref-3min.mp3", "result": "model loaded in 12 s, transcription had not finished after 7 minutes; abandoned" },
+    { "lib": "3.8.1", "model": "whisper-base", "device": "hybrid (fp32 encoder on WebGPU, q8 decoder on WASM)", "clip": "ref-3min.mp3", "loadSeconds": 3.2, "runSeconds": 28.4, "chunks": 35, "sameOrigin": true },
+    { "lib": "3.8.1", "model": "whisper-base", "device": "wasm q8", "clip": "ref-3min.mp3", "loadSeconds": 2.9, "runSeconds": 53.7, "chunks": 29, "sameOrigin": true },
+    { "lib": "3.8.1", "model": "whisper-base", "device": "hybrid", "clip": "clip-45s.wav", "runSeconds": 5.2, "chunks": 6, "finalWords": "blue lantern harbors" },
+    { "lib": "3.8.1", "model": "whisper-tiny", "device": "hybrid", "clip": "clip-45s.wav", "runSeconds": 3.5, "chunks": 4, "note": "dropped the final sentence after 32 s; reproduced in the app with the m4a clip" },
+    { "lib": "3.8.1", "model": "whisper-tiny", "device": "wasm q8", "clip": "clip-45s.wav", "runSeconds": 5.3, "chunks": 4, "note": "final sentence present" }
+  ],
+  "decisions": [
+    "WebGPU machines run the encoder on WebGPU in fp32 and the q8 merged decoder on WASM.",
+    "Whisper tiny always runs on WASM.",
+    "The q4 merged decoder from the manifest is not vendored: whisper-base's is 123.6 MB, over GitHub's 100 MB per file limit."
+  ]
+}

@@ -34,4 +34,4 @@ jobs:
           git add spikes/results || true
           git diff --cached --quiet && exit 0
           git commit -m "Gate evidence from headless Chromium"
-          git pull --rebase && git push
+          git checkout -- vendor && git pull --rebase && git push

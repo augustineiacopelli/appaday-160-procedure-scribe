@@ -5,7 +5,7 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' blob: https://api.anthropic.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="apple-touch-icon" href="https://augustineiacopelli.github.io/appaday/icons/160.png">
-<meta name="apple-mobile-web-app-title" content="Scribe">
+<meta name="apple-mobile-web-app-title" content="Procedures">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -382,7 +382,7 @@ const $ = (id) => document.getElementById(id);
 
 // Approximate download sizes in MB, from vendor/MANIFEST.json.
 const MODELS = {
-  tiny: { id: 'onnx-community/whisper-tiny', label: 'Tiny', mb: { wasm: 0, webgpu: 0 }, note: 'Fastest, rougher text', rtf: { wasm: 0.15, webgpu: 0.08 } },
+  tiny: { id: 'onnx-community/whisper-tiny', label: 'Tiny', mb: { wasm: 0, webgpu: 0 }, note: 'Fastest, rougher text, always WASM', rtf: { wasm: 0.15, webgpu: 0.15 } },
   base: { id: 'onnx-community/whisper-base', label: 'Base', mb: { wasm: 0, webgpu: 0 }, note: 'Balanced, recommended', rtf: { wasm: 0.4, webgpu: 0.16 } },
 };
 // WebGPU path: the fp32 encoder (the heavy part) runs on the GPU and the q8 merged decoder runs on WASM.
@@ -392,6 +392,9 @@ const DTYPE = {
   webgpu: { encoder_model: 'fp32', decoder_model_merged: 'q8' },
   wasm: 'q8',
 };
+// Tiny always runs on WASM: with the fp32 encoder on the GPU it dropped the last sentence of the
+// 45 second test clip in Gate 2, and on WASM it is already fast (about 0.12 s per second of audio).
+const runDevice = () => (ui.model === 'tiny' ? 'wasm' : ui.device);
 const DEVICE_MAP = {
   webgpu: { encoder_model: 'webgpu', decoder_model_merged: 'wasm' },
   wasm: 'wasm',
@@ -487,11 +490,15 @@ async function runCapabilityChecks() {
   if (!caps.clipboard) capNote('The clipboard API is unavailable; Copy buttons fall back to selecting text, which may not work on every browser. You can still download a .txt file.');
   chooseDevice();
 }
+function renderDeviceLine() {
+  $('deviceLine').textContent = runDevice() === 'webgpu'
+    ? 'Running on WebGPU (' + ui.adapterInfo + ') for the encoder, WASM for the decoder.'
+    : (ui.model === 'tiny' && ui.device === 'webgpu' ? 'Running on WASM (Tiny always uses WASM).'
+      : (caps.webgpu ? 'Running on WASM (forced in Settings).' : 'Running on WASM. No WebGPU adapter was found, which is normal on Safari and many laptops.'));
+}
 function chooseDevice() {
   ui.device = caps.webgpu && !$('forceWasm').checked ? 'webgpu' : 'wasm';
-  $('deviceLine').textContent = ui.device === 'webgpu'
-    ? 'Running on WebGPU (' + ui.adapterInfo + ') for the encoder, WASM for the decoder.'
-    : (caps.webgpu ? 'Running on WASM (forced in Settings).' : 'Running on WASM. No WebGPU adapter was found, which is normal on Safari and many laptops.');
+  renderDeviceLine();
   renderModels();
   renderEstimate();
 }
@@ -704,18 +711,32 @@ function renderModels() {
     b.setAttribute('aria-pressed', String(k === ui.model));
     b.appendChild(document.createTextNode(m.label));
     const s = document.createElement('small');
-    const mb = m.mb[ui.device];
+    const mb = m.mb[k === 'tiny' ? 'wasm' : ui.device];
     s.textContent = (mb ? 'about ' + mb + ' MB, ' : '') + m.note.toLowerCase();
     b.appendChild(s);
-    b.addEventListener('click', () => { if (ui.busy) return; ui.model = k; renderModels(); renderEstimate(); });
+    b.addEventListener('click', () => { if (ui.busy) return; ui.model = k; renderModels(); renderEstimate(); renderDeviceLine(); });
     seg.appendChild(b);
   }
 }
 function renderEstimate() {
   const d = state.durationSec;
   if (!d) { $('estimate').textContent = ''; return; }
-  const r = MODELS[ui.model].rtf[ui.device];
+  const r = MODELS[ui.model].rtf[runDevice()];
   $('estimate').textContent = 'Rough estimate for ' + fmtTime(d) + ' of audio: ' + fmtTime(d * r * 0.5) + ' to ' + fmtTime(d * r * 2) + ' after the model downloads. Refined after the first segment.';
+}
+function collapseRepeats(text) {
+  // Whisper can fall into a loop and emit the same phrase many times. Three or more identical
+  // back to back runs of 4 or more words are collapsed to one; normal speech almost never does this.
+  const w = text.split(/\s+/);
+  for (let size = Math.min(30, Math.floor(w.length / 3)); size >= 4; size--) {
+    for (let i = 0; i + size * 3 <= w.length; i++) {
+      const key = w.slice(i, i + size).join(' ').toLowerCase();
+      let reps = 1;
+      while (w.slice(i + size * reps, i + size * (reps + 1)).join(' ').toLowerCase() === key) reps++;
+      if (reps >= 3) w.splice(i + size, size * (reps - 1));
+    }
+  }
+  return w.join(' ');
 }
 function absChunks(chunks, offset, segEnd, isLast, prevEnd) {
   // Shift to absolute time, keep chunks that start inside this segment's own 10 minutes,
@@ -724,7 +745,7 @@ function absChunks(chunks, offset, segEnd, isLast, prevEnd) {
   for (const c of chunks) {
     const s = (c.s == null ? 0 : c.s) + offset;
     const e = (c.e == null ? segEnd + OVERLAP_SEC : c.e + offset);
-    const text = (c.text || '').trim();
+    const text = collapseRepeats((c.text || '').trim());
     if (!text) continue;
     if (!isLast && s >= segEnd) continue;
     if (s < prevEnd - 0.75) continue;
@@ -753,8 +774,8 @@ async function transcribe() {
     $('st3').textContent = 'Starting the speech engine.';
     await wCall({ type: 'init', libURL: abs('vendor/transformers/transformers.min.js'), wasmPaths: abs('vendor/ort/'), modelsURL: abs('models/') });
     const files = {};
-    $('st3').textContent = 'Loading ' + m.label + ' on ' + ui.device.toUpperCase() + '.';
-    await wCall({ type: 'load', model: ui.model, modelId: m.id, device: DEVICE_MAP[ui.device], dtype: DTYPE[ui.device], modelsURL: abs('models/') }, null, (p) => {
+    $('st3').textContent = 'Loading ' + m.label + (runDevice() === 'webgpu' ? ' on WebGPU and WASM.' : ' on WASM.');
+    await wCall({ type: 'load', model: ui.model, modelId: m.id, device: DEVICE_MAP[runDevice()], dtype: DTYPE[runDevice()], modelsURL: abs('models/') }, null, (p) => {
       files[p.file] = p; let l = 0, t = 0;
       for (const f of Object.values(files)) { l += f.loaded || 0; t += f.total || 0; }
       if (t) { meter('m3', l / t); $('st3').textContent = 'Downloading model: ' + (l / 1048576).toFixed(1) + ' of ' + (t / 1048576).toFixed(1) + ' MB'; }
@@ -1028,7 +1049,7 @@ async function renderDiagnostics() {
   if (ui.adapterInfo) lines.push('adapter ' + ui.adapterInfo);
   lines.push('module worker ' + caps.moduleWorker + ', clipboard ' + caps.clipboard + ', crossOriginIsolated ' + self.crossOriginIsolated);
   for (const m of Object.values(MODELS)) lines.push(m.id + ' source ' + abs('models/') + ' revision ' + ((revs[m.id] && revs[m.id].sha) || 'unknown'));
-  lines.push('model in use ' + ui.model + ', device ' + JSON.stringify(DEVICE_MAP[ui.device]) + ', dtype ' + JSON.stringify(DTYPE[ui.device]));
+  lines.push('model in use ' + ui.model + ', device ' + JSON.stringify(DEVICE_MAP[runDevice()]) + ', dtype ' + JSON.stringify(DTYPE[runDevice()]));
   lines.push('user agent ' + navigator.userAgent);
   $('diag').textContent = lines.join('\n');
 }
