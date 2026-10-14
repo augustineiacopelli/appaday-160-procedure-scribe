@@ -1,5 +1,5 @@
 {
-  "generated": "2026-10-14T10:54:31.037Z",
+  "generated": "2026-10-14T11:00:22.159Z",
   "versions": {
     "@ffmpeg/core": "0.12.10",
     "@ffmpeg/ffmpeg": "0.12.15",
@@ -12,6 +12,141 @@
     "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4"
   },
   "files": [
+    {
+      "path": "models/REVISIONS.json",
+      "size": 251,
+      "sha256": "c9ff3de934f4904d06b20f707788c8e2ae511369a65cc07ff89eb25008fde352"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/added_tokens.json",
+      "size": 34604,
+      "sha256": "9715fd2243b6f06a5858b5e32950d2853f73dd5bc201aafcf76f5082a2d8acd1"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/config.json",
+      "size": 2243,
+      "sha256": "f4d0608f7d918166da7edb3e188de5ef1bfe70d9802e785d271fd88111e9cf4b"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/generation_config.json",
+      "size": 3832,
+      "sha256": "61070cf8de25b1e9256e8e102ded49d8d24a8369ed36ef84fdf21549e68125a0"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/merges.txt",
+      "size": 493869,
+      "sha256": "2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/normalizer.json",
+      "size": 52666,
+      "sha256": "bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/onnx/decoder_model_merged_quantized.onnx",
+      "size": 53693315,
+      "sha256": "fa3ef9902734ce5ae6f9ef2bdb2ba9a6c4b5785b09f4f420ce036573dc9d090b"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/onnx/encoder_model.onnx",
+      "size": 82468078,
+      "sha256": "a9f3b752833b49e880dec91ee5b6d936112be7c3ea07c221024ba493439f46fe"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/onnx/encoder_model_quantized.onnx",
+      "size": 23201314,
+      "sha256": "5862993336bf33acd23736071aae2b32261d3b1b2f37780194460d4ef974dd46"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/preprocessor_config.json",
+      "size": 339,
+      "sha256": "a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/special_tokens_map.json",
+      "size": 2194,
+      "sha256": "e67ae3a0aaa99abcd9f187138e12db1f65c16a14761c50ef10eef2c174a7a691"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/tokenizer.json",
+      "size": 2480466,
+      "sha256": "27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/tokenizer_config.json",
+      "size": 282682,
+      "sha256": "2e036e4dbacfdeb7242c7d4ec4149f4a16e86026048f94d1637e3a8ee9c6a573"
+    },
+    {
+      "path": "models/onnx-community/whisper-base/vocab.json",
+      "size": 1036584,
+      "sha256": "50d6a919f0a0601d56a04eb583c780d18553aa388254ba3158eb6a00f13e2c1a"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/added_tokens.json",
+      "size": 34604,
+      "sha256": "9715fd2243b6f06a5858b5e32950d2853f73dd5bc201aafcf76f5082a2d8acd1"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/config.json",
+      "size": 2243,
+      "sha256": "46aeea0a406afbeb563fc8e59ca10609203df4299af6a83f73752fef369efd2d"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/generation_config.json",
+      "size": 3772,
+      "sha256": "f5c67e5a4f7102f8cb4d058bc95da276bbc19eeec997267c3bb0f25ef68facd1"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/merges.txt",
+      "size": 493869,
+      "sha256": "2df2990a395e35e8dfbc7511e08c12d56018d8d04691e0133e5d63b21e154dc6"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/normalizer.json",
+      "size": 52666,
+      "sha256": "bf1c507dc8724ca9cf9903640dacfb69dae2f00edee4f21ceba106a7392f26dd"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/onnx/decoder_model_merged_quantized.onnx",
+      "size": 30719241,
+      "sha256": "25e807a962b6349356d0ea5d0dfe530b7e5bf0e2a484aeca0359d03143faddd3"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/onnx/encoder_model.onnx",
+      "size": 32904992,
+      "sha256": "6642befb640f950d4a8cbbd17834d59e7e75f575b81ccf213e06b050623ab1dd"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/onnx/encoder_model_quantized.onnx",
+      "size": 10124990,
+      "sha256": "2af4a414ca47aa30f61246017e5fe82b0a8d229281d1255ba666a2a7f6b84d19"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/preprocessor_config.json",
+      "size": 339,
+      "sha256": "a6a76d28c93edb273669eb9e0b0636a2bddbb1272c3261e47b7ca6dfdbac1b8d"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/special_tokens_map.json",
+      "size": 2194,
+      "sha256": "e67ae3a0aaa99abcd9f187138e12db1f65c16a14761c50ef10eef2c174a7a691"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/tokenizer.json",
+      "size": 2480466,
+      "sha256": "27fc476bfe7f17299480be2273fc0608e4d5a99aba2ab5dec5374b4482d1a566"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/tokenizer_config.json",
+      "size": 282683,
+      "sha256": "2a4c4281cf9f51ac6ccc406fdc711a087afe6530f671fa7b80953edc498275ce"
+    },
+    {
+      "path": "models/onnx-community/whisper-tiny/vocab.json",
+      "size": 1036584,
+      "sha256": "50d6a919f0a0601d56a04eb583c780d18553aa388254ba3158eb6a00f13e2c1a"
+    },
     {
       "path": "vendor/docx/docx.iife.js",
       "size": 1339132,
