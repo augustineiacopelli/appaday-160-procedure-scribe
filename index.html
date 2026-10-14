@@ -148,6 +148,7 @@ textarea{
 .note.err{border-left-color:var(--red);}
 .note.err b{color:var(--red);}
 .hidden{display:none !important;}
+body.text-mode .media-only{display:none !important;}
 .counts{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
 .preview{background:var(--paper);color:#17201a;padding:18px;border:1px solid var(--edge);max-height:60vh;overflow:auto;font-size:var(--fs-small);}
 .preview h1,.preview h2,.preview h3{font-family:'Archivo',sans-serif;line-height:1.25;margin:1em 0 .4em;}
@@ -187,7 +188,7 @@ footer a:hover{color:var(--acc-hi);}
       <a class="back" href="https://augustineiacopelli.github.io/appaday/">AppADay Index</a>
     </div>
   </div>
-  <p class="lede">Turn a <b>dictated recording</b> into an edited <b>training module, SOP, or lecture outline</b>. Your audio is transcribed right here in the browser, then you paste a ready made prompt into Claude and bring the result back for Word, Markdown, or plain text.</p>
+  <p class="lede">Turn a <b>dictated recording</b>, or a <b>transcript you already have</b>, into an edited <b>training module, SOP, or lecture outline</b>. Your audio is transcribed right here in the browser, then you paste a ready made prompt into Claude and bring the result back for Word, Markdown, or plain text.</p>
   <p class="privacy">Media and transcripts stay on this device. Nothing uploads.</p>
   <p class="flash hidden" id="flash" role="status"></p>
   <div id="capNotes"></div>
@@ -196,12 +197,12 @@ footer a:hover{color:var(--acc-hi);}
   <section class="stage" id="s1" data-step="1">
     <header><span class="n">1</span><h2>Intake</h2><span class="chip" id="c1">Waiting</span></header>
     <div class="body">
-      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose an audio or video file">
-        <h3>Load a recording</h3>
-        <p>Drop an mp4, mov, m4a, mp3, or wav here, or tap to pick one.</p>
+      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose an audio, video, or transcript file">
+        <h3>Load a recording or transcript</h3>
+        <p>Drop an mp4, mov, m4a, mp3, or wav recording, or a .txt, .vtt, or .srt transcript, here or tap to pick one.</p>
         <span class="cue">Choose file</span>
       </div>
-      <input type="file" id="picker" accept="video/mp4,video/quicktime,audio/mp4,audio/x-m4a,audio/mpeg,audio/wav,audio/x-wav,.mp4,.mov,.m4a,.mp3,.wav">
+      <input type="file" id="picker" accept="video/mp4,video/quicktime,audio/mp4,audio/x-m4a,audio/mpeg,audio/wav,audio/x-wav,.mp4,.mov,.m4a,.mp3,.wav,text/plain,text/vtt,application/x-subrip,.txt,.vtt,.srt">
       <p class="note err hidden" id="intakeErr"></p>
       <div id="intakeInfo" class="hidden" style="display:grid;gap:12px">
         <p class="fname" id="fname"></p>
@@ -233,18 +234,18 @@ footer a:hover{color:var(--acc-hi);}
   <section class="stage locked" id="s3" data-step="3">
     <header><span class="n">3</span><h2>Transcribe</h2><span class="chip" id="c3">Locked</span></header>
     <div class="body">
-      <div>
+      <div class="media-only">
         <span class="lbl" id="modelLbl">Whisper model</span>
         <div class="seg" id="modelSeg" role="group" aria-labelledby="modelLbl"></div>
       </div>
-      <p class="status" id="deviceLine">Checking for a GPU.</p>
-      <p class="status" id="estimate"></p>
-      <button class="go" id="transcribeGo" type="button">Transcribe</button>
+      <p class="status media-only" id="deviceLine">Checking for a GPU.</p>
+      <p class="status media-only" id="estimate"></p>
+      <button class="go media-only" id="transcribeGo" type="button">Transcribe</button>
       <div class="meter hidden" id="m3"><i></i></div>
       <p class="status" id="st3"></p>
       <p class="note err hidden" id="err3"></p>
       <div id="tOut" class="hidden" style="display:grid;gap:10px">
-        <label class="check"><input type="checkbox" id="tsToggle"> Show [mm:ss] timestamps</label>
+        <label class="check" id="tsToggleRow"><input type="checkbox" id="tsToggle"> Show [mm:ss] timestamps</label>
         <pre class="transcript" id="transcript" aria-label="Transcript" tabindex="0"></pre>
         <div class="btnrow">
           <button class="sbtn primary" id="copyTranscript" type="button">Copy transcript</button>
@@ -266,7 +267,7 @@ footer a:hover{color:var(--acc-hi);}
           <button type="button" data-tpl="lecture" aria-pressed="false">Lecture outline</button>
         </div>
       </div>
-      <label class="check"><input type="checkbox" id="promptTs"> Include [mm:ss] timestamps in the prompt</label>
+      <label class="check" id="promptTsRow"><input type="checkbox" id="promptTs"> Include [mm:ss] timestamps in the prompt</label>
       <p class="status" id="promptCount"></p>
       <p class="note warn hidden" id="leaveNote"><b>This text leaves your device</b> when you paste it into Claude or send it. Follow your employer's data policy before sending sensitive material.</p>
       <div class="btnrow">
@@ -407,12 +408,16 @@ const TYPES = {
   m4a: { mimes: ['audio/mp4', 'audio/x-m4a', 'audio/m4a'], kind: 'audio', label: 'M4A' },
   mp3: { mimes: ['audio/mpeg', 'audio/mp3'], kind: 'audio', label: 'MP3' },
   wav: { mimes: ['audio/wav', 'audio/x-wav', 'audio/wave', 'audio/vnd.wave'], kind: 'audio', label: 'WAV' },
+  txt: { mimes: ['text/plain'], kind: 'text', label: 'TXT' },
+  vtt: { mimes: ['text/vtt'], kind: 'text', label: 'VTT' },
+  srt: { mimes: ['application/x-subrip', 'text/srt'], kind: 'text', label: 'SRT' },
 };
+const TEXT_MAX = 5 * 1024 * 1024;
 
 const state = {
   file: null, durationSec: null, segments: [], transcriptText: '', template: 'training', outputText: '', apiKey: null,
 };
-const ui = { ext: null, longAck: false, model: 'base', device: 'wasm', adapterInfo: '', fallback: false, urls: new Set(), busy: false, runToken: 0 };
+const ui = { textMode: false, hasTimes: false, ext: null, longAck: false, model: 'base', device: 'wasm', adapterInfo: '', fallback: false, urls: new Set(), busy: false, runToken: 0 };
 
 // ---------- helpers ----------
 function setChip(n, text, cls) { const c = $('c' + n); c.textContent = text; c.className = 'chip' + (cls ? ' ' + cls : ''); }
@@ -511,8 +516,8 @@ function detectType(file) {
   const mime = (file.type || '').toLowerCase();
   if (TYPES[ext]) {
     if (!mime || TYPES[ext].mimes.includes(mime) || mime === 'application/octet-stream') return ext;
-    // Extension and MIME disagree: trust the extension only if the MIME is still audio or video.
-    if (/^(audio|video)\//.test(mime)) return ext;
+    // Extension and MIME disagree: trust the extension only if the MIME is the same broad family.
+    if (TYPES[ext].kind === 'text' ? /^text\//.test(mime) : /^(audio|video)\//.test(mime)) return ext;
     return null;
   }
   for (const [k, t] of Object.entries(TYPES)) if (t.mimes.includes(mime)) return k;
@@ -531,8 +536,71 @@ function probeDuration(file, kind) {
     el.src = url;
   });
 }
+// ---------- transcript files (.txt, .vtt, .srt) ----------
+function parseClock(t) {
+  const p = t.trim().replace(',', '.').split(':').map(Number);
+  if (p.some((n) => !isFinite(n))) return null;
+  return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p.length === 2 ? p[0] * 60 + p[1] : null;
+}
+function parseTranscriptFile(raw, ext) {
+  const text = raw.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const segs = [];
+  if (ext === 'vtt' || ext === 'srt' || /^WEBVTT/.test(text) || /^\d+\n\d{1,2}:\d{2}:\d{2}[,.]\d{3}\s*-->/m.test(text)) {
+    // Caption files: one cue per block, with a start time line. Teams and Zoom put the speaker in <v Name>.
+    for (const block of text.split(/\n{2,}/)) {
+      const lines = block.split('\n').filter((l) => l.trim());
+      const ti = lines.findIndex((l) => l.includes('-->'));
+      if (ti < 0) continue;
+      const start = parseClock(lines[ti].split('-->')[0]);
+      let body = lines.slice(ti + 1).join(' ');
+      const who = /<v(?:\.[^\s>]*)?\s+([^>]+)>/.exec(body);
+      body = body.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+      if (!body) continue;
+      if (who) body = who[1].trim() + ': ' + body;
+      const prev = segs[segs.length - 1];
+      if (prev && prev.text === body) continue; // rolling captions repeat lines
+      segs.push({ startSec: start == null ? 0 : start, endSec: null, text: body });
+    }
+    return { segs, hasTimes: segs.length > 0 };
+  }
+  // Plain text: lines that start with [mm:ss] or [hh:mm:ss] keep their times; otherwise one paragraph per block.
+  const stamped = /^\s*\[?(\d{1,2}:\d{2}(?::\d{2})?)\]?\s+(.*)$/;
+  const lines = text.split('\n').filter((l) => l.trim());
+  const timed = lines.filter((l) => stamped.test(l)).length;
+  if (lines.length && timed >= lines.length * 0.6) {
+    for (const l of lines) {
+      const m = stamped.exec(l);
+      if (m) segs.push({ startSec: parseClock(m[1]) || 0, endSec: null, text: m[2].trim() });
+      else if (segs.length) segs[segs.length - 1].text += ' ' + l.trim();
+    }
+    return { segs, hasTimes: true };
+  }
+  for (const para of text.split(/\n\s*\n/)) {
+    const t = para.replace(/\s+/g, ' ').trim();
+    if (t) segs.push({ startSec: 0, endSec: null, text: t });
+  }
+  return { segs, hasTimes: false };
+}
+function setTextMode(on) {
+  ui.textMode = on;
+  document.body.classList.toggle('text-mode', on);
+  show($('tsToggleRow'), !on || ui.hasTimes);
+  show($('promptTsRow'), !on || ui.hasTimes);
+}
 function renderIntakeFacts() {
   $('fname').textContent = state.file.name;
+  if (ui.textMode) {
+    $('fType').textContent = TYPES[ui.ext].label + ' transcript';
+    $('fSize').textContent = (state.file.size / 1024).toFixed(1) + ' KB';
+    $('fDur').textContent = ui.hasTimes && state.segments.length ? 'to ' + fmtTime(state.segments[state.segments.length - 1].startSec) : 'no timestamps';
+    $('fSegs').textContent = state.transcriptText.split(/\s+/).filter(Boolean).length.toLocaleString() + ' words';
+    $('fSegs').previousElementSibling.textContent = 'Words';
+    show($('longWarn'), false);
+    $('intakeGo').textContent = 'Use this transcript';
+    $('intakeGo').classList.remove('warn');
+    return;
+  }
+  $('fSegs').previousElementSibling.textContent = 'Segments';
   $('fType').textContent = TYPES[ui.ext].label + ' ' + TYPES[ui.ext].kind;
   $('fSize').textContent = (state.file.size / 1048576).toFixed(1) + ' MB';
   $('fDur').textContent = state.durationSec ? fmtTime(state.durationSec) : 'read in step 2';
@@ -547,11 +615,25 @@ async function acceptFile(file) {
   show($('intakeErr'), false);
   const ext = detectType(file);
   if (!ext) {
-    $('intakeErr').textContent = 'That file type is not supported. Use mp4, mov, m4a, mp3, or wav.';
+    $('intakeErr').textContent = 'That file type is not supported. Use mp4, mov, m4a, mp3, or wav, or a .txt, .vtt, or .srt transcript.';
     show($('intakeErr'), true); return;
   }
   resetAfterIntake();
   state.file = file; ui.ext = ext; ui.longAck = false;
+  if (TYPES[ext].kind === 'text') {
+    if (file.size > TEXT_MAX) { $('intakeErr').textContent = 'That transcript is over 5 MB. Split it into smaller files.'; show($('intakeErr'), true); state.file = null; return; }
+    const { segs, hasTimes } = parseTranscriptFile(await file.text(), ext);
+    if (!segs.length) { $('intakeErr').textContent = 'No transcript text was found in that file.'; show($('intakeErr'), true); state.file = null; return; }
+    ui.hasTimes = hasTimes;
+    setTextMode(true);
+    state.segments = segs; rebuildTranscriptText();
+    show($('intakeInfo'), true);
+    renderIntakeFacts();
+    setChip(1, 'Loaded', 'done');
+    return;
+  }
+  ui.hasTimes = true;
+  setTextMode(false);
   state.durationSec = await probeDuration(file, TYPES[ext].kind);
   show($('intakeInfo'), true);
   renderIntakeFacts();
@@ -564,6 +646,16 @@ function intakeContinue() {
     ui.longAck = true; $('intakeGo').textContent = 'Tap again to confirm'; return;
   }
   $('intakeGo').disabled = true;
+  if (ui.textMode) {
+    // A transcript file skips extraction and transcription entirely.
+    setChip(2, 'Not needed');
+    unlock(3); setChip(3, 'Imported', 'done');
+    renderTranscript(); show($('tOut'), true);
+    $('st3').textContent = 'Transcript loaded from ' + TYPES[ui.ext].label + ' file: ' + state.transcriptText.split(/\s+/).filter(Boolean).length.toLocaleString() + ' words.';
+    unlock(4); buildPrompt();
+    $('s4').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
   unlock(2);
   $('s2').scrollIntoView({ behavior: 'smooth', block: 'start' });
   prepareExtract();
@@ -773,6 +865,7 @@ function keepChunks(chunks, offset, segEnd, isLast) {
   return { kept, nextStart };
 }
 function renderTranscript() {
+  if (ui.textMode && !ui.hasTimes) { $('transcript').textContent = state.segments.map((c) => c.text).join('\n\n'); return; }
   const ts = $('tsToggle').checked;
   $('transcript').textContent = ts
     ? state.segments.map((c) => mmss(c.startSec) + ' ' + c.text).join('\n')
@@ -888,7 +981,8 @@ function neutralizeTags(t) {
 }
 function buildPrompt() {
   const t = TEMPLATES[state.template];
-  const body = $('promptTs').checked ? state.segments.map((c) => mmss(c.startSec) + ' ' + c.text).join('\n') : state.transcriptText;
+  const body = ($('promptTs').checked && ui.hasTimes) ? state.segments.map((c) => mmss(c.startSec) + ' ' + c.text).join('\n')
+    : (ui.textMode && !ui.hasTimes ? state.segments.map((c) => c.text).join('\n\n') : state.transcriptText);
   // Plain string concatenation; user text is never evaluated.
   const parts = FRAME.split('{TRANSCRIPT}');
   promptText = parts[0].split('{DOC_TYPE}').join(t.docType).split('{STRUCTURE}').join(t.structure) + neutralizeTags(body) + parts[1];
@@ -1077,6 +1171,7 @@ async function clearAll() {
   if (ff) { try { ff.terminate(); } catch (e) {} ff = null; ffLoading = null; }
   for (const u of ui.urls) URL.revokeObjectURL(u); ui.urls.clear();
   state.file = null; state.durationSec = null; state.template = 'training'; state.apiKey = null; ui.ext = null; ui.longAck = false;
+  ui.hasTimes = false; setTextMode(false);
   $('apiKey').value = ''; syncApiPanel();
   $('picker').value = '';
   ['fname', 'fType', 'fSize', 'fDur', 'fSegs'].forEach((i) => { $(i).textContent = ''; });

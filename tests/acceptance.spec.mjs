@@ -154,3 +154,32 @@ test('offline after the page and models are cached', async ({ page, context }) =
   expect((await page.locator('#transcript').textContent()).toLowerCase()).toContain('step');
   await context.setOffline(false);
 });
+
+for (const [file, expectTimes, needle] of [
+  ['transcript-plain.txt', false, 'Unlock the front door'],
+  ['transcript-timed.txt', true, '[01:15] Then check the voicemail.'],
+  ['transcript-teams.vtt', true, '[01:10] Stino Iacopelli: Check the voicemail last.'],
+  ['transcript-captions.srt', true, '[00:05] Then turn off the alarm panel.'],
+]) {
+  test(`transcript file ${file} skips extraction and reaches Prompt`, async ({ page, baseURL }) => {
+    const net = track(page, baseURL);
+    await page.goto('./');
+    await page.setInputFiles('#picker', fx(file));
+    await expect(page.locator('#intakeGo')).toHaveText('Use this transcript');
+    await page.click('#intakeGo');
+    await expect(page.locator('#c2')).toHaveText('Not needed');
+    await expect(page.locator('#c3')).toHaveText('Imported');
+    await expect(page.locator('#transcribeGo')).toBeHidden();
+    await expect(page.locator('#s4')).not.toHaveClass(/locked/);
+    await expect(page.locator('#tsToggleRow')).toBeVisible({ visible: expectTimes });
+    if (expectTimes) await page.check('#tsToggle');
+    expect(await page.locator('#transcript').textContent()).toContain(needle);
+    await expect(page.locator('#transcript img')).toHaveCount(0);
+    if (expectTimes) { await page.check('#promptTs'); }
+    await page.click('#copyPrompt'); await page.click('#copyPrompt');
+    const prompt = await page.evaluate(() => navigator.clipboard.readText());
+    expect(prompt).toMatch(/\n<transcript>\n[\s\S]+\n<\/transcript>$/);
+    if (file === 'transcript-teams.vtt') expect(prompt.match(/Then turn off the alarm panel/g).length).toBe(1);
+    expect(net.bad).toEqual([]);
+  });
+}

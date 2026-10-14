@@ -6,7 +6,7 @@ Live: https://augustineiacopelli.github.io/appaday-160-procedure-scribe/
 
 ## How it works
 
-1. **Intake.** Drop or pick an mp4, mov, m4a, mp3, or wav. The type is detected from the extension and MIME together. Recordings over 30 minutes need a second tap.
+1. **Intake.** Drop or pick an mp4, mov, m4a, mp3, or wav. The type is detected from the extension and MIME together. Recordings over 30 minutes need a second tap. Already have a transcript? Drop a .txt, .vtt, or .srt file instead (Teams and Zoom caption exports work, with speaker names kept) and the app skips straight to Prompt.
 2. **Extract.** ffmpeg.wasm reads the file in place (WORKERFS) and pulls out 10 minute segments of 16 kHz mono audio, one segment in memory at a time. If ffmpeg cannot start, files under 100 MB fall back to the browser's own decoder.
 3. **Transcribe.** Whisper tiny or base runs in a blob module worker on WebGPU when an adapter exists, otherwise on WASM. Timestamps are offset to absolute time and segments overlap by 5 seconds so no word is lost at a boundary. Copy or download the raw transcript with no network call at all.
 4. **Prompt.** Pick Training module, SOP, or Lecture outline. The transcript is wrapped in `<transcript>` tags with rules that treat it as data. Copy the prompt and open Claude, or, if you add an API key in Settings, send it directly.
