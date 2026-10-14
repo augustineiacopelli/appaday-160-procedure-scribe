@@ -1,0 +1,1 @@
+{ "sentence": "The quick brown fox jumps over the lazy dog. Open the supply closet and check the printer paper.", "mustContain": ["quick", "brown", "fox", "lazy", "dog", "printer", "paper"] }
