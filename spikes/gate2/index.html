@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gate 2: Whisper versions and sources</title>
+<style>
+  body{font:15px/1.5 system-ui,sans-serif;background:#0f1419;color:#e6e6e6;margin:0;padding:16px}
+  button,select{font:inherit;min-height:44px;margin:4px 4px 4px 0}
+  button{background:#f5b700;color:#111;border:0;border-radius:8px;padding:0 16px;font-weight:600}
+  pre{background:#1a2129;padding:12px;border-radius:8px;white-space:pre-wrap;word-break:break-word}
+</style>
+</head>
+<body>
+<h1>Gate 2: Whisper in an inline blob worker</h1>
+<p>Runs whisper from this site's models/ folder through a blob module worker, with remote models disabled.</p>
+<p>
+  <select id="lib"><option value="v3">Transformers.js 3.8.1 (vendor/)</option><option value="v4">Transformers.js 4.3.1 (candidate)</option></select>
+  <select id="model"><option>whisper-base</option><option>whisper-tiny</option></select>
+  <select id="device"><option value="auto">auto</option><option value="webgpu">webgpu</option><option value="wasm">wasm</option></select>
+  <select id="clip"><option value="ref-3min.mp3">ref-3min.mp3</option><option value="clip-45s.wav">clip-45s.wav</option><option value="smoke-10s.wav">smoke-10s.wav</option></select>
+  <button id="go">Run</button>
+</p>
+<pre id="out">idle</pre>
+
+<script type="text/plain" id="worker-src">
+let pipe = null, key = '';
+self.onmessage = async ({ data }) => {
+  try {
+    if (data.type === 'run') {
+      const T = await import(data.libURL);
+      const { pipeline, env } = T;
+      env.allowLocalModels = true;
+      env.allowRemoteModels = false;
+      env.localModelPath = data.modelsURL;
+      env.backends.onnx.wasm.wasmPaths = data.wasmPaths;
+      const k = data.model + data.device;
+      if (k !== key) {
+        const t0 = performance.now();
+        pipe = await pipeline('automatic-speech-recognition', 'onnx-community/' + data.model, {
+          device: data.device,
+          dtype: data.device === 'webgpu' ? { encoder_model: 'fp32', decoder_model_merged: 'q4' } : 'q8',
+        });
+        key = k;
+        self.postMessage({ type: 'loaded', seconds: (performance.now() - t0) / 1000, version: env.version });
+      }
+      const t1 = performance.now();
+      const out = await pipe(data.samples, {
+        chunk_length_s: 30, stride_length_s: 5, return_timestamps: true, language: 'english', task: 'transcribe',
+      });
+      const workerOrigins = [...new Set(performance.getEntriesByType('resource').map((e) => new URL(e.name).origin))];
+      self.postMessage({ type: 'done', seconds: (performance.now() - t1) / 1000, out, workerOrigins });
+    }
+  } catch (e) {
+    self.postMessage({ type: 'error', message: String(e && e.stack || e) });
+  }
+};
+</script>
+
+<script type="module">
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+const abs = (p) => new URL(p, location.href).href;
+const LIB = {
+  v3: { lib: abs('../../vendor/transformers/transformers.min.js'), wasm: abs('../../vendor/ort/') },
+  v4: { lib: abs('v4/transformers.min.js'), wasm: abs('v4/') },
+};
+
+async function decode16k(url) {
+  const buf = await (await fetch(url)).arrayBuffer();
+  const ctx = new AudioContext();
+  const decoded = await ctx.decodeAudioData(buf);
+  ctx.close();
+  const off = new OfflineAudioContext(1, Math.ceil(decoded.duration * 16000), 16000);
+  const src = off.createBufferSource(); src.buffer = decoded; src.connect(off.destination); src.start();
+  return (await off.startRendering()).getChannelData(0);
+}
+
+async function pickDevice(want) {
+  if (want !== 'auto') return want;
+  if (navigator.gpu) { try { if (await navigator.gpu.requestAdapter()) return 'webgpu'; } catch {} }
+  return 'wasm';
+}
+
+export async function runGate2({ lib = 'v3', model = 'whisper-base', device = 'auto', clip = 'ref-3min.mp3' } = {}) {
+  performance.clearResourceTimings();
+  const dev = await pickDevice(device);
+  out.textContent = `lib ${lib}, ${model}, ${dev}, ${clip}`;
+  const samples = await decode16k(abs('../../tests/fixtures/' + clip));
+  log(`audio ${(samples.length / 16000).toFixed(1)} s`);
+  const src = document.getElementById('worker-src').textContent;
+  const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })), { type: 'module' });
+  const result = await new Promise((resolve) => {
+    const r = { lib, model, device: dev, clip };
+    w.onmessage = ({ data }) => {
+      if (data.type === 'loaded') { r.loadSeconds = +data.seconds.toFixed(1); r.version = data.version; log(`model loaded in ${r.loadSeconds} s (v${data.version})`); }
+      if (data.type === 'done') { r.runSeconds = +data.seconds.toFixed(1); r.text = data.out.text; r.chunks = data.out.chunks; r.workerOrigins = data.workerOrigins; resolve(r); }
+      if (data.type === 'error') { r.error = data.message; resolve(r); }
+    };
+    w.postMessage({ type: 'run', libURL: LIB[lib].lib, wasmPaths: LIB[lib].wasm, modelsURL: abs('../../models/'), model, device: dev, samples }, [samples.buffer]);
+  });
+  w.terminate();
+  const origins = [...new Set([...performance.getEntriesByType('resource').map((e) => new URL(e.name).origin), ...(result.workerOrigins || [])])];
+  result.requestOrigins = origins;
+  result.onlySameOrigin = origins.every((o) => o === location.origin);
+  result.chunkCount = result.chunks ? result.chunks.length : 0;
+  window.__gate2 = window.__gate2 || [];
+  window.__gate2.push(result);
+  log(JSON.stringify({ ...result, chunks: result.chunks && result.chunks.slice(0, 6) }, null, 2));
+  return result;
+}
+window.runGate2 = runGate2;
+document.getElementById('go').addEventListener('click', () => runGate2({
+  lib: document.getElementById('lib').value, model: document.getElementById('model').value,
+  device: document.getElementById('device').value, clip: document.getElementById('clip').value,
+}));
+</script>
+</body>
+</html>

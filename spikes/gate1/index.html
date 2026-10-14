@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gate 1: ffmpeg same origin</title>
+<style>
+  body{font:15px/1.5 system-ui,sans-serif;background:#0f1419;color:#e6e6e6;margin:0;padding:16px}
+  button,input{font:inherit;min-height:44px;margin:4px 0}
+  button{background:#f5b700;color:#111;border:0;border-radius:8px;padding:0 16px;font-weight:600}
+  pre{background:#1a2129;padding:12px;border-radius:8px;white-space:pre-wrap;word-break:break-all}
+</style>
+</head>
+<body>
+<h1>Gate 1: ffmpeg on Pages, same origin</h1>
+<p>Loads vendored @ffmpeg/ffmpeg 0.12.15 and @ffmpeg/core 0.12.10, mounts the input with WORKERFS, and writes one 600 second f32le 16 kHz mono segment. Pass when the segment is exactly 38,400,000 bytes.</p>
+<p><input type="file" id="file" accept="video/*,audio/*"></p>
+<p><button id="synth">Synthesize a 207 MB, 18 minute WAV and run</button></p>
+<pre id="out">idle</pre>
+<script src="../../vendor/ffmpeg/ffmpeg.js"></script>
+<script>
+const out = document.getElementById('out');
+const log = (m) => { out.textContent += '\n' + m; };
+const abs = (p) => new URL(p, location.href).href;
+
+function synthWav(seconds, rate = 48000, ch = 2) {
+  // Builds a WAV as many small Blob parts so no single giant buffer exists.
+  const bytesPerSec = rate * ch * 2, dataLen = seconds * bytesPerSec;
+  const hdr = new DataView(new ArrayBuffer(44));
+  const w = (o, s) => [...s].forEach((c, i) => hdr.setUint8(o + i, c.charCodeAt(0)));
+  w(0, 'RIFF'); hdr.setUint32(4, 36 + dataLen, true); w(8, 'WAVE'); w(12, 'fmt ');
+  hdr.setUint32(16, 16, true); hdr.setUint16(20, 1, true); hdr.setUint16(22, ch, true);
+  hdr.setUint32(24, rate, true); hdr.setUint32(28, bytesPerSec, true); hdr.setUint16(32, ch * 2, true);
+  hdr.setUint16(34, 16, true); w(36, 'data'); hdr.setUint32(40, dataLen, true);
+  const parts = [hdr.buffer];
+  const sec = new Int16Array(rate * ch);
+  for (let i = 0; i < rate; i++) { const v = Math.round(Math.sin(2 * Math.PI * 440 * i / rate) * 8000); sec[i * ch] = v; sec[i * ch + 1] = v; }
+  for (let s = 0; s < seconds; s++) parts.push(sec);
+  return new File(parts, 'synth-18min.wav', { type: 'audio/wav' });
+}
+
+async function run(file) {
+  out.textContent = `input: ${file.name}, ${(file.size / 1e6).toFixed(1)} MB`;
+  const result = { input: file.name, size: file.size, crossOriginIsolated: self.crossOriginIsolated, ua: navigator.userAgent };
+  const t0 = performance.now();
+  try {
+    const ff = new FFmpegWASM.FFmpeg();
+    let lastProgress = 0;
+    ff.on('progress', ({ progress }) => { lastProgress = progress; });
+    // classWorkerURL is deliberately not passed: the UMD build then spawns its own classic worker
+    // from the same directory as ffmpeg.js, which is same origin. Passing it forces a module worker,
+    // where the UMD chunk's importScripts call fails.
+    await ff.load({ coreURL: abs('../../vendor/ffmpeg/ffmpeg-core.js'), wasmURL: abs('../../vendor/ffmpeg/ffmpeg-core.wasm') });
+    log(`loaded in ${((performance.now() - t0) / 1000).toFixed(1)} s`);
+    await ff.createDir('/in');
+    await ff.mount('WORKERFS', { files: [file] }, '/in');
+    log('WORKERFS mounted');
+    const t1 = performance.now();
+    const code = await ff.exec(['-ss', '0', '-t', '600', '-i', '/in/' + file.name, '-vn', '-ac', '1', '-ar', '16000', '-f', 'f32le', 'seg.raw']);
+    const data = await ff.readFile('seg.raw');
+    await ff.deleteFile('seg.raw');
+    result.exitCode = code;
+    result.segmentBytes = data.byteLength;
+    result.expectedBytes = 600 * 16000 * 4;
+    result.extractSeconds = +((performance.now() - t1) / 1000).toFixed(1);
+    result.lastProgress = lastProgress;
+    await ff.unmount('/in');
+    ff.terminate();
+  } catch (e) {
+    result.error = String(e && e.message || e);
+  }
+  const origins = [...new Set(performance.getEntriesByType('resource').map((r) => new URL(r.name).origin))];
+  result.requestOrigins = origins;
+  result.onlySameOrigin = origins.every((o) => o === location.origin);
+  result.pass = result.segmentBytes === result.expectedBytes && result.onlySameOrigin;
+  window.__gate1 = result;
+  log(JSON.stringify(result, null, 2));
+}
+document.getElementById('file').addEventListener('change', (e) => e.target.files[0] && run(e.target.files[0]));
+document.getElementById('synth').addEventListener('click', () => run(synthWav(18 * 60)));
+window.__runGate1 = run;
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+name: Gates
+# Gate 1 and Gate 2 evidence in headless Chromium against the live Pages site. Run by hand.
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  gates:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - run: sudo apt-get install -y ffmpeg
+      - name: Build a 200 MB mp4 with a 20 minute audio track
+        run: |
+          ffmpeg -loglevel error -f lavfi -i "testsrc2=s=1280x720:r=30" -f lavfi -i "sine=f=440:r=48000" -t 1200 \
+            -c:v libx264 -preset ultrafast -b:v 1250k -c:a aac -b:a 128k /tmp/big.mp4
+          ls -la /tmp/big.mp4
+      - run: node scripts/run-gates.mjs "https://augustineiacopelli.github.io/appaday-160-procedure-scribe/" /tmp/big.mp4
+      - name: Commit evidence
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add spikes/results || true
+          git diff --cached --quiet && exit 0
+          git commit -m "Gate evidence from headless Chromium"
+          git pull --rebase && git push
