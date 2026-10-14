@@ -25,11 +25,23 @@ jobs:
       - run: bash scripts/make-fixtures.sh
       - run: node scripts/verify-manifest.mjs
       - run: du -sh vendor models tests spikes || true
-      - name: Commit
+      - name: Commit in small pushes
+        # One push per large file keeps each request well under the server timeout.
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
-          git add -A vendor models tests spikes
-          git diff --cached --quiet && echo "nothing to commit" && exit 0
-          git commit -m "Vendor whisper tiny and base at pinned revisions; regenerate fixtures"
-          git push
+          git config http.postBuffer 524288000
+          push() { for n in 1 2 3; do git push && return 0; sleep 10; done; return 1; }
+          step() {
+            git add -A -- "$@" 2>/dev/null || true
+            git diff --cached --quiet && return 0
+            git commit -q -m "Vendor: $1"
+            push
+          }
+          for f in $(find models -name '*.onnx' -size +20M | sort); do step "$f"; done
+          step models
+          step vendor/ort
+          step vendor/ffmpeg
+          step spikes
+          step tests
+          step vendor

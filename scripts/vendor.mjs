@@ -39,6 +39,12 @@ const COPIES = [
   ['@ffmpeg/core/dist/umd/ffmpeg-core.wasm', 'vendor/ffmpeg/ffmpeg-core.wasm'],
   ['@ffmpeg/util/dist/umd/index.js', 'vendor/ffmpeg/util.js'],
   ['docx/dist/index.iife.js', 'vendor/docx/docx.iife.js'],
+  // Fonts served from this origin instead of Google Fonts, so the CSP can stay 'self' only.
+  ['@fontsource/big-shoulders-display/files/big-shoulders-display-latin-800-normal.woff2', 'vendor/fonts/big-shoulders-display-latin-800-normal.woff2'],
+  ['@fontsource/archivo/files/archivo-latin-400-normal.woff2', 'vendor/fonts/archivo-latin-400-normal.woff2'],
+  ['@fontsource/archivo/files/archivo-latin-600-normal.woff2', 'vendor/fonts/archivo-latin-600-normal.woff2'],
+  ['@fontsource/space-mono/files/space-mono-latin-400-normal.woff2', 'vendor/fonts/space-mono-latin-400-normal.woff2'],
+  ['@fontsource/space-mono/files/space-mono-latin-700-normal.woff2', 'vendor/fonts/space-mono-latin-700-normal.woff2'],
 ];
 
 for (const [src, dst] of COPIES) {

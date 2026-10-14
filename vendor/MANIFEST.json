@@ -1,12 +1,15 @@
 {
-  "generated": "2026-10-14T10:33:38.017Z",
+  "generated": "2026-10-14T10:54:31.037Z",
   "versions": {
-    "@huggingface/transformers": "3.8.1",
-    "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",
-    "@ffmpeg/ffmpeg": "0.12.15",
     "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/ffmpeg": "0.12.15",
     "@ffmpeg/util": "0.12.2",
-    "docx": "9.10.0"
+    "@fontsource/archivo": "5.3.0",
+    "@fontsource/big-shoulders-display": "5.3.0",
+    "@fontsource/space-mono": "5.3.0",
+    "@huggingface/transformers": "3.8.1",
+    "docx": "9.10.0",
+    "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4"
   },
   "files": [
     {
@@ -40,6 +43,31 @@
       "sha256": "6c63aa4e22ee38159b7d3de68e0f49ba90b880dfabf25a732dd5a3aa1e037309"
     },
     {
+      "path": "vendor/fonts/archivo-latin-400-normal.woff2",
+      "size": 14700,
+      "sha256": "07f9160163da2ec0f6376ef9d27a2bb8163f98019ba798da4baafb154e30056e"
+    },
+    {
+      "path": "vendor/fonts/archivo-latin-600-normal.woff2",
+      "size": 13820,
+      "sha256": "d9e8c29fdd348edde2a4f9aae438e569dd165bbbdebda78495824a2d9aaa67e8"
+    },
+    {
+      "path": "vendor/fonts/big-shoulders-display-latin-800-normal.woff2",
+      "size": 14556,
+      "sha256": "088f423f09136bc96b5a7cc7232d671a1ad06a5ff1cf90cd1e24a8d9809d471c"
+    },
+    {
+      "path": "vendor/fonts/space-mono-latin-400-normal.woff2",
+      "size": 16520,
+      "sha256": "fb4a81a2d0a893e5c38c394a7e716a1cef0b24610a0af49c96f6d529bd66bf2b"
+    },
+    {
+      "path": "vendor/fonts/space-mono-latin-700-normal.woff2",
+      "size": 16724,
+      "sha256": "2d46bd159b53f55c41167a4f1540a074649464194fd1e416f5b4694a6c0f282c"
+    },
+    {
       "path": "vendor/ort/ort-wasm-simd-threaded.jsep.mjs",
       "size": 44484,
       "sha256": "08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9"
@@ -56,8 +84,8 @@
     },
     {
       "path": "vendor/versions.json",
-      "size": 206,
-      "sha256": "ee868b74b0657f9cd722d3f8c6f2d2ffe86d05621082f790b29c94e7797865a6"
+      "size": 325,
+      "sha256": "33ce52a076f3fdec56312e9f58aa968990a569343e28120cf440851e713a8cb8"
     }
   ]
 }

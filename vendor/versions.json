@@ -1,8 +1,11 @@
 {
-  "@huggingface/transformers": "3.8.1",
-  "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",
-  "@ffmpeg/ffmpeg": "0.12.15",
   "@ffmpeg/core": "0.12.10",
+  "@ffmpeg/ffmpeg": "0.12.15",
   "@ffmpeg/util": "0.12.2",
-  "docx": "9.10.0"
+  "@fontsource/archivo": "5.3.0",
+  "@fontsource/big-shoulders-display": "5.3.0",
+  "@fontsource/space-mono": "5.3.0",
+  "@huggingface/transformers": "3.8.1",
+  "docx": "9.10.0",
+  "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4"
 }
