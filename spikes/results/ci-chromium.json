@@ -1,0 +1,346 @@
+{
+  "gate1": {
+    "input": "big.mp4",
+    "size": 214756404,
+    "crossOriginIsolated": false,
+    "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/141.0.7390.37 Safari/537.36",
+    "exitCode": 0,
+    "segmentBytes": 38400000,
+    "expectedBytes": 38400000,
+    "extractSeconds": 3.8,
+    "lastProgress": 1,
+    "requestOrigins": [
+      "https://augustineiacopelli.github.io"
+    ],
+    "onlySameOrigin": true,
+    "pass": true,
+    "networkOrigins": [
+      "https://augustineiacopelli.github.io"
+    ]
+  },
+  "gate2": [
+    {
+      "lib": "v3",
+      "model": "whisper-base",
+      "device": "wasm",
+      "clip": "ref-3min.mp3",
+      "loadSeconds": 4.5,
+      "version": "3.8.1",
+      "runSeconds": 44.4,
+      "text": " Sentence 1 Record the item count online world of the inventory sheet Sentence 2 Record the item count online 2 of the inventory sheet Sentence 3 Record the item count online 3 of the inventory sheet Sentence 4 Record the item count online 4 of the inventory sheet Sentence 5 Record the item count online 5 of the inventory sheet Sentence 6 and The Reckard the item count online 12 of the inventory sheet Sentence 13 Reckard the item count online 30 of the inventory sheet Sentence 14 Reckard the item count online 40 of the inventory sheet Sentence 15 Reckard the item count online 50 of the inventory sheet Sentence 16 Reckard the item count online 60 of the inventory sheet The RECORD RIDEM COUNTON RINE-20 of the inventory sheet Centenstventy RECORD RIDEM COUNTON RINE-20 of the inventory sheet Centenstventy one RECORD RIDEM COUNTON RINE-20 of the inventory sheet Centenstventy two RECORD RIDEM COUNTON RINE-20 of the inventory sheet Centenstventy three RECORD RIDEM COUNT ON LINE 23 of the inventory sheet RECORD RIDEUM COUNT ON LINE 24 of the inventory sheet RECORD RIDEUM COUNT ON LINE 25 of the inventory sheet RECORD RIDEUM COUNT ON LINE 26 of the inventory sheet Sentence 26 Record the item count online 26 of the inventory sheet Sentence 27 Record the item count online 27 of the inventory sheet Sentence 28 Record the item count online 28 of the inventory sheet Sentence 29 Record the item count online 20 of the inventory sheet Sentence 30 The",
+      "chunks": [
+        {
+          "timestamp": [
+            0,
+            1
+          ],
+          "text": " Sentence 1"
+        },
+        {
+          "timestamp": [
+            1,
+            5
+          ],
+          "text": " Record the item count online world of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            5,
+            6
+          ],
+          "text": " Sentence 2"
+        },
+        {
+          "timestamp": [
+            6,
+            10
+          ],
+          "text": " Record the item count online 2 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            10,
+            11
+          ],
+          "text": " Sentence 3"
+        },
+        {
+          "timestamp": [
+            11,
+            15
+          ],
+          "text": " Record the item count online 3 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            15,
+            17
+          ],
+          "text": " Sentence 4"
+        },
+        {
+          "timestamp": [
+            17,
+            21
+          ],
+          "text": " Record the item count online 4 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            21,
+            22
+          ],
+          "text": " Sentence 5"
+        },
+        {
+          "timestamp": [
+            22,
+            66
+          ],
+          "text": " Record the item count online 5 of the inventory sheet Sentence 6 and The Reckard the item count online 12 of the inventory sheet Sentence 13"
+        },
+        {
+          "timestamp": [
+            66,
+            70
+          ],
+          "text": " Reckard the item count online 30 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            70,
+            72
+          ],
+          "text": " Sentence 14"
+        },
+        {
+          "timestamp": [
+            72,
+            76
+          ],
+          "text": " Reckard the item count online 40 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            76,
+            78
+          ],
+          "text": " Sentence 15"
+        },
+        {
+          "timestamp": [
+            78,
+            82
+          ],
+          "text": " Reckard the item count online 50 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            82,
+            84
+          ],
+          "text": " Sentence 16"
+        },
+        {
+          "timestamp": [
+            84,
+            110
+          ],
+          "text": " Reckard the item count online 60 of the inventory sheet The RECORD RIDEM COUNTON RINE-20 of the inventory sheet Centenstventy RECORD RIDEM COUNTON RINE-20 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            110,
+            116
+          ],
+          "text": " Centenstventy one RECORD RIDEM COUNTON RINE-20 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            116,
+            122
+          ],
+          "text": " Centenstventy two RECORD RIDEM COUNTON RINE-20 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            122,
+            130
+          ],
+          "text": " Centenstventy three RECORD RIDEM COUNT ON LINE 23 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            130,
+            135
+          ],
+          "text": " RECORD RIDEUM COUNT ON LINE 24 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            135,
+            142
+          ],
+          "text": " RECORD RIDEUM COUNT ON LINE 25 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            142,
+            148
+          ],
+          "text": " RECORD RIDEUM COUNT ON LINE 26 of the inventory sheet Sentence 26 Record the item count online 26 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            148,
+            150
+          ],
+          "text": " Sentence 27"
+        },
+        {
+          "timestamp": [
+            150,
+            154
+          ],
+          "text": " Record the item count online 27 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            154,
+            156
+          ],
+          "text": " Sentence 28"
+        },
+        {
+          "timestamp": [
+            156,
+            160
+          ],
+          "text": " Record the item count online 28 of the inventory sheet"
+        },
+        {
+          "timestamp": [
+            160,
+            162
+          ],
+          "text": " Sentence 29"
+        },
+        {
+          "timestamp": [
+            162,
+            null
+          ],
+          "text": " Record the item count online 20 of the inventory sheet Sentence 30 The"
+        }
+      ],
+      "workerOrigins": [
+        "https://augustineiacopelli.github.io"
+      ],
+      "requestOrigins": [
+        "https://augustineiacopelli.github.io"
+      ],
+      "onlySameOrigin": true,
+      "chunkCount": 29,
+      "networkOrigins": [
+        "https://augustineiacopelli.github.io"
+      ]
+    },
+    {
+      "lib": "v4",
+      "model": "whisper-base",
+      "device": "wasm",
+      "clip": "ref-3min.mp3",
+      "loadSeconds": 2.3,
+      "version": "4.3.1",
+      "error": "TypeError: Cannot read properties of null (reading 'feature_extractor')\n    at t._call_whisper (http://localhost:8080/spikes/gate2/v4/transformers.min.js:40:160931)\n    at t._call (http://localhost:8080/spikes/gate2/v4/transformers.min.js:40:159717)\n    at t (http://localhost:8080/spikes/gate2/v4/transformers.min.js:1:2684)\n    at self.onmessage (blob:http://localhost:8080/8e596f78-a285-4af5-82f3-5736646ce99e:24:25)",
+      "requestOrigins": [
+        "http://localhost:8080"
+      ],
+      "onlySameOrigin": true,
+      "chunkCount": 0,
+      "networkOrigins": [
+        "http://localhost:8080"
+      ]
+    },
+    {
+      "lib": "v3",
+      "model": "whisper-tiny",
+      "device": "wasm",
+      "clip": "clip-45s.wav",
+      "loadSeconds": 3.2,
+      "version": "3.8.1",
+      "runSeconds": 5.1,
+      "text": " I'm just doing this with your University account. Step 2. Select the Campus and Room You Want to Reserve. Step 3. Choose the date, start time and end time. And I am... Step 4. And I'm short to the script, and the character has come. Final step. The clothing words are not this recording, I'm going to turn hardware.",
+      "chunks": [
+        {
+          "timestamp": [
+            0,
+            7
+          ],
+          "text": " I'm just doing this with your University account."
+        },
+        {
+          "timestamp": [
+            8,
+            15
+          ],
+          "text": " Step 2. Select the Campus and Room You Want to Reserve."
+        },
+        {
+          "timestamp": [
+            16,
+            23
+          ],
+          "text": " Step 3. Choose the date, start time and end time."
+        },
+        {
+          "timestamp": [
+            22,
+            24
+          ],
+          "text": " And I am..."
+        },
+        {
+          "timestamp": [
+            25,
+            30
+          ],
+          "text": " Step 4. And I'm short to the script, and the character has come."
+        },
+        {
+          "timestamp": [
+            32,
+            33
+          ],
+          "text": " Final step."
+        },
+        {
+          "timestamp": [
+            33,
+            37
+          ],
+          "text": " The clothing words are not this recording, I'm going to turn hardware."
+        }
+      ],
+      "workerOrigins": [
+        "https://augustineiacopelli.github.io"
+      ],
+      "requestOrigins": [
+        "https://augustineiacopelli.github.io"
+      ],
+      "onlySameOrigin": true,
+      "chunkCount": 7,
+      "networkOrigins": [
+        "https://augustineiacopelli.github.io"
+      ]
+    }
+  ],
+  "verdict": {
+    "gate1Pass": true,
+    "v3Chunks": 29,
+    "v4Chunks": 0,
+    "v4TextMatchesV3": false,
+    "v4UpgradeAllowed": false,
+    "allGate2SameOrigin": true
+  }
+}
