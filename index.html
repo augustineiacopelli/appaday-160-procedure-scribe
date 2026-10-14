@@ -340,7 +340,7 @@ self.onmessage = async ({ data }) => {
       T.env.localModelPath = data.modelsURL;
       send({ id, type: 'ok', version: T.env.version });
     } else if (data.type === 'load') {
-      const key = data.model + '|' + data.device;
+      const key = data.model + '|' + JSON.stringify(data.device);
       if (key !== loadedKey) {
         if (pipe && pipe.dispose) { try { await pipe.dispose(); } catch (e) {} }
         pipe = null; loadedKey = '';
@@ -382,12 +382,19 @@ const $ = (id) => document.getElementById(id);
 
 // Approximate download sizes in MB, from vendor/MANIFEST.json.
 const MODELS = {
-  tiny: { id: 'onnx-community/whisper-tiny', label: 'Tiny', mb: { wasm: 0, webgpu: 0 }, note: 'Fastest, rougher text', rtf: { wasm: 0.12, webgpu: 0.05 } },
-  base: { id: 'onnx-community/whisper-base', label: 'Base', mb: { wasm: 0, webgpu: 0 }, note: 'Balanced, recommended', rtf: { wasm: 0.3, webgpu: 0.09 } },
+  tiny: { id: 'onnx-community/whisper-tiny', label: 'Tiny', mb: { wasm: 0, webgpu: 0 }, note: 'Fastest, rougher text', rtf: { wasm: 0.15, webgpu: 0.08 } },
+  base: { id: 'onnx-community/whisper-base', label: 'Base', mb: { wasm: 0, webgpu: 0 }, note: 'Balanced, recommended', rtf: { wasm: 0.4, webgpu: 0.16 } },
 };
+// WebGPU path: the fp32 encoder (the heavy part) runs on the GPU and the q8 merged decoder runs on WASM.
+// Gate 2 measured this at 0.16 s per second of audio for base, while running the q8 decoder on WebGPU
+// stalled for minutes, and the q4 decoder the manifest proposed is over GitHub's 100 MB file limit for base.
 const DTYPE = {
   webgpu: { encoder_model: 'fp32', decoder_model_merged: 'q8' },
   wasm: 'q8',
+};
+const DEVICE_MAP = {
+  webgpu: { encoder_model: 'webgpu', decoder_model_merged: 'wasm' },
+  wasm: 'wasm',
 };
 
 const TYPES = {
@@ -483,7 +490,7 @@ async function runCapabilityChecks() {
 function chooseDevice() {
   ui.device = caps.webgpu && !$('forceWasm').checked ? 'webgpu' : 'wasm';
   $('deviceLine').textContent = ui.device === 'webgpu'
-    ? 'Running on WebGPU (' + ui.adapterInfo + ').'
+    ? 'Running on WebGPU (' + ui.adapterInfo + ') for the encoder, WASM for the decoder.'
     : (caps.webgpu ? 'Running on WASM (forced in Settings).' : 'Running on WASM. No WebGPU adapter was found, which is normal on Safari and many laptops.');
   renderModels();
   renderEstimate();
@@ -747,7 +754,7 @@ async function transcribe() {
     await wCall({ type: 'init', libURL: abs('vendor/transformers/transformers.min.js'), wasmPaths: abs('vendor/ort/'), modelsURL: abs('models/') });
     const files = {};
     $('st3').textContent = 'Loading ' + m.label + ' on ' + ui.device.toUpperCase() + '.';
-    await wCall({ type: 'load', model: ui.model, modelId: m.id, device: ui.device, dtype: DTYPE[ui.device], modelsURL: abs('models/') }, null, (p) => {
+    await wCall({ type: 'load', model: ui.model, modelId: m.id, device: DEVICE_MAP[ui.device], dtype: DTYPE[ui.device], modelsURL: abs('models/') }, null, (p) => {
       files[p.file] = p; let l = 0, t = 0;
       for (const f of Object.values(files)) { l += f.loaded || 0; t += f.total || 0; }
       if (t) { meter('m3', l / t); $('st3').textContent = 'Downloading model: ' + (l / 1048576).toFixed(1) + ' of ' + (t / 1048576).toFixed(1) + ' MB'; }
@@ -1021,7 +1028,7 @@ async function renderDiagnostics() {
   if (ui.adapterInfo) lines.push('adapter ' + ui.adapterInfo);
   lines.push('module worker ' + caps.moduleWorker + ', clipboard ' + caps.clipboard + ', crossOriginIsolated ' + self.crossOriginIsolated);
   for (const m of Object.values(MODELS)) lines.push(m.id + ' source ' + abs('models/') + ' revision ' + ((revs[m.id] && revs[m.id].sha) || 'unknown'));
-  lines.push('model in use ' + ui.model + ', dtype ' + JSON.stringify(DTYPE[ui.device]));
+  lines.push('model in use ' + ui.model + ', device ' + JSON.stringify(DEVICE_MAP[ui.device]) + ', dtype ' + JSON.stringify(DTYPE[ui.device]));
   lines.push('user agent ' + navigator.userAgent);
   $('diag').textContent = lines.join('\n');
 }
