@@ -834,9 +834,11 @@ async function transcribe() {
       if (!alive()) return;
       const { kept, nextStart } = keepChunks(res.chunks, start, start + segAudio, isLast);
       if (kept.length && state.segments.length) {
-        // The first words of this segment repeat the tail of the previous one (BACKOFF_SEC); drop them.
-        kept[0].text = trimOverlap(state.segments[state.segments.length - 1].text, kept[0].text);
-        if (!kept[0].text) kept.shift();
+        // This segment re-read the last BACKOFF_SEC of the previous one. A first chunk that lies wholly
+        // inside that re-read stretch is dropped; otherwise words repeating the previous tail are trimmed.
+        const prev = state.segments[state.segments.length - 1];
+        if (kept[0].endSec <= prev.endSec + 0.75) kept.shift();
+        if (kept.length) { kept[0].text = trimOverlap(prev.text, kept[0].text); if (!kept[0].text) kept.shift(); }
       }
       state.segments.push(...kept);
       rebuildTranscriptText(); renderTranscript(); show($('tOut'), true);
