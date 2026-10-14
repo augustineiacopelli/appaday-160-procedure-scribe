@@ -30,4 +30,8 @@ BASE_URL=http://127.0.0.1:8080/ npx playwright test acceptance
 node tests/prompt.unit.mjs && node scripts/verify-manifest.mjs
 ```
 
+## License
+
+MIT. See `LICENSE`.
+
 Part of [AppADay](https://augustineiacopelli.github.io/appaday/).
