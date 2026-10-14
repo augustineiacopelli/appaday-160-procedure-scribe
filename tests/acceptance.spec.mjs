@@ -62,12 +62,13 @@ test('25 minute recording has no gap or duplicate at the segment boundaries', as
   const lines = (await page.locator('#transcript').textContent()).split('\n')
     .map((l) => { const m = /^\[(\d+):(\d+)\] (.*)$/.exec(l); return m ? { t: +m[1] * 60 + +m[2], text: m[3] } : null; })
     .filter(Boolean);
-  // The fixture speaks one sentence about every 7 seconds with no long pauses. Around each 10 minute
-  // mark, a gap over 15 s between consecutive lines means lost speech; a repeated line means a duplicate.
+  // The fixture speaks one sentence about every 7 seconds with no long pauses, and Whisper sometimes
+  // merges two sentences into one chunk (about 15 s). Around each 10 minute mark a gap over 22 s between
+  // consecutive lines means lost speech; a repeated line means a duplicate.
   for (const b of [600, 1200]) {
     const win = lines.filter((l) => l.t > b - 60 && l.t < b + 60);
     console.log('around ' + b + ' s:\n' + win.map((l) => l.t + ' ' + l.text.slice(0, 70)).join('\n'));
-    for (let k = 1; k < win.length; k++) expect(win[k].t - win[k - 1].t, 'gap near ' + b + ' s').toBeLessThan(15);
+    for (let k = 1; k < win.length; k++) expect(win[k].t - win[k - 1].t, 'gap near ' + b + ' s').toBeLessThan(22);
     const texts = win.map((l) => l.text.toLowerCase());
     expect(texts.filter((x, k) => texts.indexOf(x) !== k), 'duplicate near ' + b + ' s').toEqual([]);
     expect(win.length).toBeGreaterThan(10);
@@ -136,4 +137,20 @@ test('375 px: no horizontal scroll, every control at least 44 px', async ({ page
   console.log(JSON.stringify(r));
   expect(r.over).toBeLessThanOrEqual(0);
   expect(r.small).toEqual([]);
+});
+
+test('offline after the page and models are cached', async ({ page, context }) => {
+  await runTranscribe(page, fx('smoke-10s.wav'));      // first run fills the app and model caches
+  await page.waitForFunction(() => navigator.serviceWorker && navigator.serviceWorker.controller);
+  await context.setOffline(true);
+  await page.reload();
+  await page.click('#gearBtn'); await page.check('#forceWasm'); await page.click('#settingsDlg [data-close]');
+  await page.setInputFiles('#picker', fx('clip-45s.wav'));
+  await page.click('#intakeGo');
+  await expect(page.locator('#c2')).toHaveText(/Ready|Fallback/, { timeout: 120000 });
+  await page.click('#modelSeg button[data-model="tiny"]');
+  await page.click('#transcribeGo');
+  await expect(page.locator('#c3')).toHaveText('Done', { timeout: 10 * 60 * 1000 });
+  expect((await page.locator('#transcript').textContent()).toLowerCase()).toContain('step');
+  await context.setOffline(false);
 });
