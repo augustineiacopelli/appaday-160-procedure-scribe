@@ -21,3 +21,8 @@ jobs:
       - name: Site under 1 GB
         run: |
           kb=$(du -sk --exclude=.git . | cut -f1); echo "site ${kb} KB"; test "$kb" -lt 1000000
+      - name: Prompt containment unit check
+        run: node tests/prompt.unit.mjs
+      - name: No HTML injection APIs in the app
+        run: |
+          ! grep -nE "innerHTML|outerHTML|insertAdjacentHTML|document\.write" index.html

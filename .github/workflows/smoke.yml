@@ -1,0 +1,30 @@
+name: Smoke test
+on:
+  schedule:
+    - cron: '0 12 * * 1'   # Mondays 7:00 AM CDT (6:00 AM CST)
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['spikes/results/**']
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: npx playwright install --with-deps chromium
+      - name: Wait for Pages to publish this commit
+        if: github.event_name == 'push'
+        run: |
+          for i in $(seq 1 40); do
+            v=$(curl -fsS "https://augustineiacopelli.github.io/appaday-160-procedure-scribe/vendor/MANIFEST.json?t=$RANDOM" | sha256sum | cut -c1-16)
+            l=$(sha256sum vendor/MANIFEST.json | cut -c1-16)
+            [ "$v" = "$l" ] && curl -fsS "https://augustineiacopelli.github.io/appaday-160-procedure-scribe/?t=$RANDOM" | cmp -s - index.html && exit 0
+            sleep 15
+          done
+          echo "Pages did not publish in time"; exit 1
+      - run: npx playwright test smoke

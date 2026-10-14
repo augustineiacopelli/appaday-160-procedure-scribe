@@ -64,11 +64,17 @@ if (args.has('--candidate')) {
   const tmp = join(ROOT, '.candidate');
   const { execSync } = await import('node:child_process');
   await mkdir(tmp, { recursive: true });
+  await mkdir(join(tmp, 'ort'), { recursive: true });
   execSync(`npm pack @huggingface/transformers@4.3.1 --pack-destination ${tmp}`, { stdio: 'inherit', cwd: ROOT });
   execSync(`mkdir -p ${tmp}/x && tar -xzf ${tmp}/*.tgz -C ${tmp}/x`, { shell: true });
   const dist = join(tmp, 'x/package/dist');
-  for (const f of await readdir(dist)) {
-    if (/^transformers\.min\.js$|^ort-wasm.*\.(mjs|wasm)$/.test(f)) await copyFile(join(dist, f), join(cand, f));
+  await copyFile(join(dist, 'transformers.min.js'), join(cand, 'transformers.min.js'));
+  // v4 no longer ships the ORT wasm files itself; take them from the onnxruntime-web version it declares.
+  const ortVer = JSON.parse(readFileSync(join(tmp, 'x/package/package.json'), 'utf8')).dependencies['onnxruntime-web'];
+  execSync(`npm pack onnxruntime-web@${ortVer} --pack-destination ${tmp}/ort`, { stdio: 'inherit', cwd: ROOT });
+  execSync(`mkdir -p ${tmp}/o && tar -xzf ${tmp}/ort/*.tgz -C ${tmp}/o`, { shell: true });
+  for (const f of await readdir(join(tmp, 'o/package/dist'))) {
+    if (/^ort-wasm-simd-threaded.*\.(mjs|wasm)$/.test(f)) await copyFile(join(tmp, 'o/package/dist', f), join(cand, f));
   }
   await rm(tmp, { recursive: true, force: true });
   console.log('vendored Transformers.js 4.3.1 candidate into spikes/gate2/v4');

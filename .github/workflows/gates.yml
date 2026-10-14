@@ -22,8 +22,8 @@ jobs:
         run: npx --yes http-server@14.1.1 -p 8080 -s . &
       - name: Build a 200 MB mp4 with a 20 minute audio track
         run: |
-          ffmpeg -loglevel error -f lavfi -i "testsrc2=s=1280x720:r=30" -f lavfi -i "sine=f=440:r=48000" -t 1200 \
-            -c:v libx264 -preset ultrafast -b:v 1250k -c:a aac -b:a 128k /tmp/big.mp4
+          ffmpeg -loglevel error -f lavfi -i "testsrc2=s=320x240:r=15" -f lavfi -i "sine=f=440:r=48000" -t 1200 \
+            -c:v libx264 -preset ultrafast -b:v 1300k -minrate 1300k -maxrate 1300k -bufsize 1300k -x264-params nal-hrd=cbr -c:a aac -b:a 128k /tmp/big.mp4
           ls -la /tmp/big.mp4
       - run: node scripts/run-gates.mjs "https://augustineiacopelli.github.io/appaday-160-procedure-scribe/" /tmp/big.mp4 "http://localhost:8080/"
       - name: Commit evidence

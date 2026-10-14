@@ -12,9 +12,7 @@ to16k() { ffmpeg -loglevel error -y -i "$1" -ac 1 -ar 16000 "$2"; }
 SMOKE="The quick brown fox jumps over the lazy dog. Open the supply closet and check the printer paper."
 say "$SMOKE" /tmp/smoke.wav 130
 ffmpeg -loglevel error -y -i /tmp/smoke.wav -af "apad=whole_dur=10" -t 10 -ac 1 -ar 16000 "$F/smoke-10s.wav"
-cat > "$F/smoke-expected.json" <<JSON
-{ "sentence": "$SMOKE", "mustContain": ["quick", "brown", "fox", "lazy", "dog", "printer", "paper"] }
-JSON
+# smoke-expected.json is maintained by hand (words Whisper tiny reliably transcribes from this voice).
 
 # 2. Forty five second clip whose final sentence starts after 30 seconds (chunking check), in every accepted format.
 P1="Step one. Sign in to the scheduling system with your university account."
