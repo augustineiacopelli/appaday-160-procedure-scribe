@@ -1,0 +1,63 @@
+{
+  "generated": "2026-10-14T10:33:38.017Z",
+  "versions": {
+    "@huggingface/transformers": "3.8.1",
+    "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",
+    "@ffmpeg/ffmpeg": "0.12.15",
+    "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/util": "0.12.2",
+    "docx": "9.10.0"
+  },
+  "files": [
+    {
+      "path": "vendor/docx/docx.iife.js",
+      "size": 1339132,
+      "sha256": "1e903071ff43fce8248f93f499e31fc0e580806a0d0942056d5152cc43d34011"
+    },
+    {
+      "path": "vendor/ffmpeg/814.ffmpeg.js",
+      "size": 3177,
+      "sha256": "976f4174ae7da80c0d4f9523ee6dde3ecbce7dc2ee392b2a5322049abb9b8627"
+    },
+    {
+      "path": "vendor/ffmpeg/ffmpeg-core.js",
+      "size": 112059,
+      "sha256": "b266ab5b952555881dd6310663986994a182acb2b7ff25cf10a25f7a37ac2b21"
+    },
+    {
+      "path": "vendor/ffmpeg/ffmpeg-core.wasm",
+      "size": 32232419,
+      "sha256": "9f57947a5bd530d8f00c5b3f2cb2a3492faa7e5d823315342d6a8656d0a6b7b7"
+    },
+    {
+      "path": "vendor/ffmpeg/ffmpeg.js",
+      "size": 4420,
+      "sha256": "ad4cfe957589995dea03fc8de1fd5e9f5cb4558a7282913172203082a65bbfaa"
+    },
+    {
+      "path": "vendor/ffmpeg/util.js",
+      "size": 2958,
+      "sha256": "6c63aa4e22ee38159b7d3de68e0f49ba90b880dfabf25a732dd5a3aa1e037309"
+    },
+    {
+      "path": "vendor/ort/ort-wasm-simd-threaded.jsep.mjs",
+      "size": 44484,
+      "sha256": "08fb86ec433c78bfb032c5d84a68b8e8e5a8d81268fa39e24314179a5767a5b9"
+    },
+    {
+      "path": "vendor/ort/ort-wasm-simd-threaded.jsep.wasm",
+      "size": 21596019,
+      "sha256": "c46655e8a94afc45338d4cb2b840475f88e5012d524509916e505079c00bfa39"
+    },
+    {
+      "path": "vendor/transformers/transformers.min.js",
+      "size": 888173,
+      "sha256": "aa5002b70e789798da263f5f99c62bd3e8fcd0c119258a493c40c180648365fa"
+    },
+    {
+      "path": "vendor/versions.json",
+      "size": 206,
+      "sha256": "ee868b74b0657f9cd722d3f8c6f2d2ffe86d05621082f790b29c94e7797865a6"
+    }
+  ]
+}

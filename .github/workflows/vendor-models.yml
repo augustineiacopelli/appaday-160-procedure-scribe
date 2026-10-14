@@ -1,0 +1,35 @@
+name: Vendor models and fixtures
+# Run by hand. Downloads whisper tiny and base at the commit hashes in models/REVISIONS.json
+# (recording them on first run), regenerates vendor/ and MANIFEST.json, builds speech fixtures,
+# and commits the result. This is the only job that talks to Hugging Face.
+on:
+  workflow_dispatch:
+    inputs:
+      candidate:
+        description: Also vendor Transformers.js 4.3.1 for the Gate 2 comparison
+        type: boolean
+        default: true
+permissions:
+  contents: write
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts
+      - run: sudo apt-get update && sudo apt-get install -y espeak-ng ffmpeg
+      - run: node scripts/vendor.mjs --models ${{ inputs.candidate && '--candidate' || '' }}
+      - run: bash scripts/make-fixtures.sh
+      - run: node scripts/verify-manifest.mjs
+      - run: du -sh vendor models tests spikes || true
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898299+github-actions[bot]@users.noreply.github.com"
+          git add -A vendor models tests spikes
+          git diff --cached --quiet && echo "nothing to commit" && exit 0
+          git commit -m "Vendor whisper tiny and base at pinned revisions; regenerate fixtures"
+          git push

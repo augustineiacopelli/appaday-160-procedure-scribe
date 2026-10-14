@@ -1,0 +1,23 @@
+name: Integrity
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Recompute SHA-256 of every vendored and model file
+        run: node scripts/verify-manifest.mjs
+      - name: No file at or above 100 MB, no Git LFS
+        run: |
+          test ! -f .gitattributes || ! grep -q "filter=lfs" .gitattributes
+          big=$(find . -path ./.git -prune -o -type f -size +99M -print)
+          test -z "$big" || { echo "$big"; exit 1; }
+      - name: Site under 1 GB
+        run: |
+          kb=$(du -sk --exclude=.git . | cut -f1); echo "site ${kb} KB"; test "$kb" -lt 1000000

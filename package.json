@@ -1,0 +1,22 @@
+{
+  "name": "appaday-160-procedure-scribe",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AppADay Day 160: Procedure Scribe. Dictated audio or video to an edited procedure document, transcribed in the browser.",
+  "type": "module",
+  "scripts": {
+    "vendor": "node scripts/vendor.mjs",
+    "verify": "node scripts/verify-manifest.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "3.8.1",
+    "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4",
+    "@ffmpeg/ffmpeg": "0.12.15",
+    "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/util": "0.12.2",
+    "docx": "9.10.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1"
+  }
+}
