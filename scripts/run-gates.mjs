@@ -6,6 +6,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 
 const base = (process.argv[2] || 'https://augustineiacopelli.github.io/appaday-160-procedure-scribe/').replace(/\/?$/, '/');
 const big = process.argv[3];
+// The 4.3.1 candidate is never committed, so its run uses a local server of the same checkout.
+const local = (process.argv[4] || base).replace(/\/?$/, '/');
 await mkdir('spikes/results', { recursive: true });
 const browser = await chromium.launch({ args: ['--autoplay-policy=no-user-gesture-required'] });
 const summary = {};
@@ -41,7 +43,7 @@ const runs = [
 summary.gate2 = [];
 for (const cfg of runs) {
   const { p, ctx, requests } = await page();
-  await p.goto(base + 'spikes/gate2/');
+  await p.goto((cfg.lib === 'v4' ? local : base) + 'spikes/gate2/');
   const r = await p.evaluate((c) => window.runGate2(c), cfg).catch((e) => ({ ...cfg, error: String(e) }));
   r.networkOrigins = origins(requests);
   summary.gate2.push(r);
@@ -57,7 +59,7 @@ summary.verdict = {
   v3Chunks: a.chunkCount, v4Chunks: b.chunkCount,
   v4TextMatchesV3: norm(a.text) === norm(b.text),
   v4UpgradeAllowed: b.chunkCount > 1 && b.chunkCount === a.chunkCount && norm(a.text) === norm(b.text),
-  allGate2SameOrigin: summary.gate2.every((r) => r.networkOrigins.every((o) => base.startsWith(o))),
+  allGate2SameOrigin: summary.gate2.every((r) => r.networkOrigins.every((o) => base.startsWith(o) || local.startsWith(o))),
 };
 await writeFile('spikes/results/ci-chromium.json', JSON.stringify(summary, null, 2) + '\n');
 console.log(JSON.stringify(summary.verdict, null, 2));

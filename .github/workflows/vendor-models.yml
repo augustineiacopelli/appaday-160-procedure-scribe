@@ -4,11 +4,6 @@ name: Vendor models and fixtures
 # and commits the result. This is the only job that talks to Hugging Face.
 on:
   workflow_dispatch:
-    inputs:
-      candidate:
-        description: Also vendor Transformers.js 4.3.1 for the Gate 2 comparison
-        type: boolean
-        default: true
 permissions:
   contents: write
 jobs:
@@ -21,7 +16,7 @@ jobs:
           node-version: 22
       - run: npm ci --ignore-scripts
       - run: sudo apt-get update && sudo apt-get install -y espeak-ng ffmpeg
-      - run: node scripts/vendor.mjs --models ${{ inputs.candidate && '--candidate' || '' }}
+      - run: node scripts/vendor.mjs --models
       - run: bash scripts/make-fixtures.sh
       - run: node scripts/verify-manifest.mjs
       - run: du -sh vendor models tests spikes || true
@@ -42,6 +37,5 @@ jobs:
           step models
           step vendor/ort
           step vendor/ffmpeg
-          step spikes
           step tests
           step vendor

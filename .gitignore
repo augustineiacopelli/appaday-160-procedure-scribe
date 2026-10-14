@@ -2,3 +2,5 @@ node_modules/
 test-results/
 playwright-report/
 *.log
+spikes/gate2/v4/
+.candidate/
