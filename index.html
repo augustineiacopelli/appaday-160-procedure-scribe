@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="manifest" href="https://augustineiacopelli.github.io/appaday/manifests/160.webmanifest">
 <script src="https://augustineiacopelli.github.io/appaday/save.js" defer></script>
+<script src="https://augustineiacopelli.github.io/appaday/keys.js" data-app="160" data-accent="#289664" defer></script>
 <title>Procedure Scribe | AppADay 160</title>
 <meta name="description" content="Turn a dictated audio or video recording into an edited training module, SOP, or lecture outline. Transcription runs entirely in your browser; nothing uploads.">
 <style>
@@ -310,8 +311,8 @@ footer a:hover{color:var(--acc-hi);}
 <dialog id="settingsDlg" aria-labelledby="setTitle">
   <div class="dhead"><h2 id="setTitle">Settings</h2><button class="tbtn" type="button" data-close>Close</button></div>
   <div class="dbody">
-    <p>The copy and paste path needs no key. Add an Anthropic API key only if you want to send the prompt directly. The key is held in page memory only, is never stored, and is wiped by Clear or by closing the tab.</p>
-    <div><label class="lbl" for="apiKey">Anthropic API key (optional)</label><input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-..."></div>
+    <p>The copy and paste path needs no key. Add a Claude API key only if you want to send the prompt directly. The key stays in this browser and is used only for that send.</p>
+    <div id="keyMount"></div>
     <div><label class="lbl" for="apiModel">Claude model for API mode</label><input type="text" id="apiModel" autocomplete="off" spellcheck="false"></div>
     <label class="check"><input type="checkbox" id="forceWasm"> Force WASM (skip the GPU even when one is available)</label>
   </div>
@@ -415,7 +416,7 @@ const TYPES = {
 const TEXT_MAX = 5 * 1024 * 1024;
 
 const state = {
-  file: null, durationSec: null, segments: [], transcriptText: '', template: 'training', outputText: '', apiKey: null,
+  file: null, durationSec: null, segments: [], transcriptText: '', template: 'training', outputText: '',
 };
 const ui = { textMode: false, hasTimes: false, ext: null, longAck: false, model: 'base', device: 'wasm', adapterInfo: '', fallback: false, urls: new Set(), busy: false, runToken: 0 };
 
@@ -1002,9 +1003,7 @@ async function getDefaultModel() {
   catch (e) { return 'claude-sonnet-5-5'; }
 }
 function syncApiPanel() {
-  const k = $('apiKey').value.trim();
-  state.apiKey = k || null;
-  show($('apiPanel'), !!state.apiKey);
+  show($('apiPanel'), !!(window.AppKeys && window.AppKeys.has()));
   $('apiModelName').textContent = $('apiModel').value.trim() || 'the model in Settings';
 }
 // Models differ in how thinking is switched off: current Sonnet models want {type:'between_tools'} and
@@ -1012,7 +1011,7 @@ function syncApiPanel() {
 // only when the 400 error is about the thinking field, and remember what worked for each model.
 const THINKING_OPTIONS = [{ type: 'between_tools' }, { type: 'disabled' }, null];
 const thinkingFor = {};
-async function callClaude(model, prompt) {
+async function callClaude(model, prompt, apiKey) {
   const start = thinkingFor[model] != null ? thinkingFor[model] : 0;
   let lastErr = null;
   for (let i = start; i < THINKING_OPTIONS.length; i++) {
@@ -1020,7 +1019,7 @@ async function callClaude(model, prompt) {
     if (THINKING_OPTIONS[i]) body.thinking = THINKING_OPTIONS[i];
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': state.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
       body: JSON.stringify(body),
     });
     const j = await r.json().catch(() => ({}));
@@ -1032,13 +1031,15 @@ async function callClaude(model, prompt) {
   throw lastErr;
 }
 async function onApiSend() {
-  if (!state.apiKey) return;
+  if (!window.AppKeys || !window.AppKeys.has()) return;
   if (!sendArmed) { show($('leaveNote'), true); sendArmed = true; $('apiSend').textContent = 'I understand, send'; return; }
   sendArmed = false; $('apiSend').textContent = 'Send with API'; $('apiSend').disabled = true;
   const model = $('apiModel').value.trim();
   $('apiStatus').textContent = 'Sending to ' + model + '. Long transcripts can take a minute.';
   try {
-    const j = await callClaude(model, promptText);
+    const apiKey = await window.AppKeys.get();
+    if (!apiKey) throw new Error('No Claude API key is saved. Add one in Settings.');
+    const j = await callClaude(model, promptText, apiKey);
     const text = (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
     if (!text) throw new Error('The reply had no text (stop reason ' + j.stop_reason + ').');
     $('output').value = text; onOutputInput();
@@ -1170,9 +1171,9 @@ async function clearAll() {
   resetAfterIntake();
   if (ff) { try { ff.terminate(); } catch (e) {} ff = null; ffLoading = null; }
   for (const u of ui.urls) URL.revokeObjectURL(u); ui.urls.clear();
-  state.file = null; state.durationSec = null; state.template = 'training'; state.apiKey = null; ui.ext = null; ui.longAck = false;
+  state.file = null; state.durationSec = null; state.template = 'training'; ui.ext = null; ui.longAck = false;
   ui.hasTimes = false; setTextMode(false);
-  $('apiKey').value = ''; syncApiPanel();
+  syncApiPanel();
   $('picker').value = '';
   ['fname', 'fType', 'fSize', 'fDur', 'fSegs'].forEach((i) => { $(i).textContent = ''; });
   show($('intakeInfo'), false); show($('intakeErr'), false); show($('longWarn'), false);
@@ -1234,11 +1235,11 @@ $('dlDocx').addEventListener('click', async () => {
   catch (e) { $('st5').textContent = 'Word export failed: ' + e.message; }
 });
 $('clearBtn').addEventListener('click', clearAll);
-$('gearBtn').addEventListener('click', () => $('settingsDlg').showModal());
+$('gearBtn').addEventListener('click', () => { if (window.AppKeys) window.AppKeys.mountSettings($('keyMount')); $('settingsDlg').showModal(); });
 $('aboutBtn').addEventListener('click', () => { renderDiagnostics(); $('aboutDlg').showModal(); });
 document.querySelectorAll('dialog [data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
-$('apiKey').addEventListener('input', syncApiPanel);
+window.addEventListener('appaday:keychange', syncApiPanel);
 $('apiModel').addEventListener('input', syncApiPanel);
 $('forceWasm').addEventListener('change', () => { if (!ui.busy) { killWhisper(); chooseDevice(); } });
 $('copyDiag').addEventListener('click', async () => { await copyText($('diag').textContent); });
