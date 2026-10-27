@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="manifest" href="https://augustineiacopelli.github.io/appaday/manifests/160.webmanifest">
 <script src="https://augustineiacopelli.github.io/appaday/save.js" defer></script>
+<script src="https://augustineiacopelli.github.io/appaday/models.js"></script>
 <script src="https://augustineiacopelli.github.io/appaday/keys.js" data-app="160" data-accent="#289664" defer></script>
 <title>Procedure Scribe | AppADay 160</title>
 <meta name="description" content="Turn a dictated audio or video recording into an edited training module, SOP, or lecture outline. Transcription runs entirely in your browser; nothing uploads.">
@@ -999,8 +1000,7 @@ async function onCopyPrompt() {
   if (ok) { setChip(4, 'Copied', 'done'); unlock(5); }
 }
 async function getDefaultModel() {
-  try { const r = await fetch('https://augustineiacopelli.github.io/appaday/config.json', { cache: 'no-cache' }); const c = await r.json(); return c.models.sonnet; }
-  catch (e) { return 'claude-sonnet-5-5'; }
+  return window.AppModels ? window.AppModels.get('sonnet') : '';
 }
 function syncApiPanel() {
   show($('apiPanel'), !!(window.AppKeys && window.AppKeys.has()));
