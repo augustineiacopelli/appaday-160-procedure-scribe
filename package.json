@@ -16,7 +16,7 @@
     "@fontsource/big-shoulders-display": "5.3.0",
     "@fontsource/space-mono": "5.3.0",
     "@huggingface/transformers": "3.8.1",
-    "docx": "9.10.0",
+    "docx": "9.14.0",
     "onnxruntime-web": "1.22.0-dev.20250409-89f8206ba4"
   },
   "devDependencies": {
