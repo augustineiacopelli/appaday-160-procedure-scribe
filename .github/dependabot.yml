@@ -1,11 +1,16 @@
 version: 2
 updates:
-  # Dependabot PRs are never merged directly. Each one triggers the upgrade procedure in README.md.
+  # Runtime libraries (docx, ffmpeg, transformers, fonts): never merge directly; follow the upgrade procedure in VERSIONS.md.
+  # Test tooling (@playwright/test) and GitHub actions: merge once the smoke test passes on the PR.
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    ignore:
+      - dependency-name: "@huggingface/transformers"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "onnxruntime-web"
   - package-ecosystem: github-actions
     directory: /
     schedule:

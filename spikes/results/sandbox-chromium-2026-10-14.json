@@ -1,0 +1,9 @@
+{
+  "browser": "Headless Chromium (Playwright 1.56.1 bundled build), local static server, WASM only",
+  "gate1": { "input": "big.mp4 (214,755,752 bytes, 20 min, H.264 plus AAC)", "exitCode": 0, "segmentBytes": 38400000, "expectedBytes": 38400000, "extractSeconds": 6.3, "onlySameOrigin": true, "pass": true },
+  "gate2": [
+    { "lib": "3.8.1", "model": "whisper-base", "device": "wasm", "clip": "ref-3min.mp3", "loadSeconds": 4.5, "runSeconds": 69.5, "chunks": 29, "sameOrigin": true },
+    { "lib": "4.3.1 with onnxruntime-web 1.31.0-dev.20260914-8d85527a0", "model": "whisper-base", "device": "wasm", "clip": "ref-3min.mp3", "error": "TypeError: Cannot read properties of null (reading 'feature_extractor') in _call_whisper", "chunks": 0 }
+  ],
+  "verdict": "Gate 1 pass. Gate 2: stay on Transformers.js 3.8.1; 4.3.1 does not run the same local model folder, so the upgrade condition (matching timestamped chunks) is not met."
+}

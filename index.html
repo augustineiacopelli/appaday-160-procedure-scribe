@@ -5,12 +5,14 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob:; worker-src 'self' blob:; connect-src 'self' blob: https://api.anthropic.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; media-src blob:; manifest-src 'self'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="apple-touch-icon" href="https://augustineiacopelli.github.io/appaday/icons/160.png">
-<meta name="apple-mobile-web-app-title" content="Scribe">
+<meta name="apple-mobile-web-app-title" content="Procedures">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black">
 <link rel="manifest" href="https://augustineiacopelli.github.io/appaday/manifests/160.webmanifest">
 <script src="https://augustineiacopelli.github.io/appaday/save.js" defer></script>
+<script src="https://augustineiacopelli.github.io/appaday/models.js"></script>
+<script src="https://augustineiacopelli.github.io/appaday/keys.js" data-app="160" data-accent="#289664" defer></script>
 <title>Procedure Scribe | AppADay 160</title>
 <meta name="description" content="Turn a dictated audio or video recording into an edited training module, SOP, or lecture outline. Transcription runs entirely in your browser; nothing uploads.">
 <style>
@@ -148,6 +150,7 @@ textarea{
 .note.err{border-left-color:var(--red);}
 .note.err b{color:var(--red);}
 .hidden{display:none !important;}
+body.text-mode .media-only{display:none !important;}
 .counts{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;}
 .preview{background:var(--paper);color:#17201a;padding:18px;border:1px solid var(--edge);max-height:60vh;overflow:auto;font-size:var(--fs-small);}
 .preview h1,.preview h2,.preview h3{font-family:'Archivo',sans-serif;line-height:1.25;margin:1em 0 .4em;}
@@ -187,7 +190,7 @@ footer a:hover{color:var(--acc-hi);}
       <a class="back" href="https://augustineiacopelli.github.io/appaday/">AppADay Index</a>
     </div>
   </div>
-  <p class="lede">Turn a <b>dictated recording</b> into an edited <b>training module, SOP, or lecture outline</b>. Your audio is transcribed right here in the browser, then you paste a ready made prompt into Claude and bring the result back for Word, Markdown, or plain text.</p>
+  <p class="lede">Turn a <b>dictated recording</b>, or a <b>transcript you already have</b>, into an edited <b>training module, SOP, or lecture outline</b>. Your audio is transcribed right here in the browser, then you paste a ready made prompt into Claude and bring the result back for Word, Markdown, or plain text.</p>
   <p class="privacy">Media and transcripts stay on this device. Nothing uploads.</p>
   <p class="flash hidden" id="flash" role="status"></p>
   <div id="capNotes"></div>
@@ -196,12 +199,12 @@ footer a:hover{color:var(--acc-hi);}
   <section class="stage" id="s1" data-step="1">
     <header><span class="n">1</span><h2>Intake</h2><span class="chip" id="c1">Waiting</span></header>
     <div class="body">
-      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose an audio or video file">
-        <h3>Load a recording</h3>
-        <p>Drop an mp4, mov, m4a, mp3, or wav here, or tap to pick one.</p>
+      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Choose an audio, video, or transcript file">
+        <h3>Load a recording or transcript</h3>
+        <p>Drop an mp4, mov, m4a, mp3, or wav recording, or a .txt, .vtt, or .srt transcript, here or tap to pick one.</p>
         <span class="cue">Choose file</span>
       </div>
-      <input type="file" id="picker" accept="video/mp4,video/quicktime,audio/mp4,audio/x-m4a,audio/mpeg,audio/wav,audio/x-wav,.mp4,.mov,.m4a,.mp3,.wav">
+      <input type="file" id="picker" accept="video/mp4,video/quicktime,audio/mp4,audio/x-m4a,audio/mpeg,audio/wav,audio/x-wav,.mp4,.mov,.m4a,.mp3,.wav,text/plain,text/vtt,application/x-subrip,.txt,.vtt,.srt">
       <p class="note err hidden" id="intakeErr"></p>
       <div id="intakeInfo" class="hidden" style="display:grid;gap:12px">
         <p class="fname" id="fname"></p>
@@ -233,18 +236,18 @@ footer a:hover{color:var(--acc-hi);}
   <section class="stage locked" id="s3" data-step="3">
     <header><span class="n">3</span><h2>Transcribe</h2><span class="chip" id="c3">Locked</span></header>
     <div class="body">
-      <div>
+      <div class="media-only">
         <span class="lbl" id="modelLbl">Whisper model</span>
         <div class="seg" id="modelSeg" role="group" aria-labelledby="modelLbl"></div>
       </div>
-      <p class="status" id="deviceLine">Checking for a GPU.</p>
-      <p class="status" id="estimate"></p>
-      <button class="go" id="transcribeGo" type="button">Transcribe</button>
+      <p class="status media-only" id="deviceLine">Checking for a GPU.</p>
+      <p class="status media-only" id="estimate"></p>
+      <button class="go media-only" id="transcribeGo" type="button">Transcribe</button>
       <div class="meter hidden" id="m3"><i></i></div>
       <p class="status" id="st3"></p>
       <p class="note err hidden" id="err3"></p>
       <div id="tOut" class="hidden" style="display:grid;gap:10px">
-        <label class="check"><input type="checkbox" id="tsToggle"> Show [mm:ss] timestamps</label>
+        <label class="check" id="tsToggleRow"><input type="checkbox" id="tsToggle"> Show [mm:ss] timestamps</label>
         <pre class="transcript" id="transcript" aria-label="Transcript" tabindex="0"></pre>
         <div class="btnrow">
           <button class="sbtn primary" id="copyTranscript" type="button">Copy transcript</button>
@@ -266,7 +269,7 @@ footer a:hover{color:var(--acc-hi);}
           <button type="button" data-tpl="lecture" aria-pressed="false">Lecture outline</button>
         </div>
       </div>
-      <label class="check"><input type="checkbox" id="promptTs"> Include [mm:ss] timestamps in the prompt</label>
+      <label class="check" id="promptTsRow"><input type="checkbox" id="promptTs"> Include [mm:ss] timestamps in the prompt</label>
       <p class="status" id="promptCount"></p>
       <p class="note warn hidden" id="leaveNote"><b>This text leaves your device</b> when you paste it into Claude or send it. Follow your employer's data policy before sending sensitive material.</p>
       <div class="btnrow">
@@ -309,8 +312,8 @@ footer a:hover{color:var(--acc-hi);}
 <dialog id="settingsDlg" aria-labelledby="setTitle">
   <div class="dhead"><h2 id="setTitle">Settings</h2><button class="tbtn" type="button" data-close>Close</button></div>
   <div class="dbody">
-    <p>The copy and paste path needs no key. Add an Anthropic API key only if you want to send the prompt directly. The key is held in page memory only, is never stored, and is wiped by Clear or by closing the tab.</p>
-    <div><label class="lbl" for="apiKey">Anthropic API key (optional)</label><input type="password" id="apiKey" autocomplete="off" spellcheck="false" placeholder="sk-ant-..."></div>
+    <p>The copy and paste path needs no key. Add a Claude API key only if you want to send the prompt directly. The key stays in this browser and is used only for that send.</p>
+    <div id="keyMount"></div>
     <div><label class="lbl" for="apiModel">Claude model for API mode</label><input type="text" id="apiModel" autocomplete="off" spellcheck="false"></div>
     <label class="check"><input type="checkbox" id="forceWasm"> Force WASM (skip the GPU even when one is available)</label>
   </div>
@@ -340,7 +343,7 @@ self.onmessage = async ({ data }) => {
       T.env.localModelPath = data.modelsURL;
       send({ id, type: 'ok', version: T.env.version });
     } else if (data.type === 'load') {
-      const key = data.model + '|' + data.device;
+      const key = data.model + '|' + JSON.stringify(data.device);
       if (key !== loadedKey) {
         if (pipe && pipe.dispose) { try { await pipe.dispose(); } catch (e) {} }
         pipe = null; loadedKey = '';
@@ -375,6 +378,7 @@ self.onmessage = async ({ data }) => {
 const APP_VERSION = 'v1.0.0';
 const SEG_SEC = 600;          // 10 minute segments
 const OVERLAP_SEC = 5;        // each segment reads 5 s past its end so no word is cut at a boundary
+const BACKOFF_SEC = 2;        // the next segment re-reads 2 s before the cut; repeated words are merged away
 const LONG_SEC = 30 * 60;
 const FALLBACK_MAX = 100 * 1024 * 1024;
 const abs = (p) => new URL(p, location.href).href;
@@ -382,12 +386,22 @@ const $ = (id) => document.getElementById(id);
 
 // Approximate download sizes in MB, from vendor/MANIFEST.json.
 const MODELS = {
-  tiny: { id: 'onnx-community/whisper-tiny', label: 'Tiny', mb: { wasm: 0, webgpu: 0 }, note: 'Fastest, rougher text', rtf: { wasm: 0.12, webgpu: 0.05 } },
-  base: { id: 'onnx-community/whisper-base', label: 'Base', mb: { wasm: 0, webgpu: 0 }, note: 'Balanced, recommended', rtf: { wasm: 0.3, webgpu: 0.09 } },
+  tiny: { id: 'onnx-community/whisper-tiny', label: 'Tiny', mb: { wasm: 0, webgpu: 0 }, note: 'Fastest, rougher text, always WASM', rtf: { wasm: 0.15, webgpu: 0.15 } },
+  base: { id: 'onnx-community/whisper-base', label: 'Base', mb: { wasm: 0, webgpu: 0 }, note: 'Balanced, recommended', rtf: { wasm: 0.4, webgpu: 0.16 } },
 };
+// WebGPU path: the fp32 encoder (the heavy part) runs on the GPU and the q8 merged decoder runs on WASM.
+// Gate 2 measured this at 0.16 s per second of audio for base, while running the q8 decoder on WebGPU
+// stalled for minutes, and the q4 decoder the manifest proposed is over GitHub's 100 MB file limit for base.
 const DTYPE = {
   webgpu: { encoder_model: 'fp32', decoder_model_merged: 'q8' },
   wasm: 'q8',
+};
+// Tiny always runs on WASM: with the fp32 encoder on the GPU it dropped the last sentence of the
+// 45 second test clip in Gate 2, and on WASM it is already fast (about 0.12 s per second of audio).
+const runDevice = () => (ui.model === 'tiny' ? 'wasm' : ui.device);
+const DEVICE_MAP = {
+  webgpu: { encoder_model: 'webgpu', decoder_model_merged: 'wasm' },
+  wasm: 'wasm',
 };
 
 const TYPES = {
@@ -396,12 +410,16 @@ const TYPES = {
   m4a: { mimes: ['audio/mp4', 'audio/x-m4a', 'audio/m4a'], kind: 'audio', label: 'M4A' },
   mp3: { mimes: ['audio/mpeg', 'audio/mp3'], kind: 'audio', label: 'MP3' },
   wav: { mimes: ['audio/wav', 'audio/x-wav', 'audio/wave', 'audio/vnd.wave'], kind: 'audio', label: 'WAV' },
+  txt: { mimes: ['text/plain'], kind: 'text', label: 'TXT' },
+  vtt: { mimes: ['text/vtt'], kind: 'text', label: 'VTT' },
+  srt: { mimes: ['application/x-subrip', 'text/srt'], kind: 'text', label: 'SRT' },
 };
+const TEXT_MAX = 5 * 1024 * 1024;
 
 const state = {
-  file: null, durationSec: null, segments: [], transcriptText: '', template: 'training', outputText: '', apiKey: null,
+  file: null, durationSec: null, segments: [], transcriptText: '', template: 'training', outputText: '',
 };
-const ui = { ext: null, longAck: false, model: 'base', device: 'wasm', adapterInfo: '', fallback: false, urls: new Set(), busy: false, runToken: 0 };
+const ui = { textMode: false, hasTimes: false, ext: null, longAck: false, model: 'base', device: 'wasm', adapterInfo: '', fallback: false, urls: new Set(), busy: false, runToken: 0 };
 
 // ---------- helpers ----------
 function setChip(n, text, cls) { const c = $('c' + n); c.textContent = text; c.className = 'chip' + (cls ? ' ' + cls : ''); }
@@ -480,11 +498,15 @@ async function runCapabilityChecks() {
   if (!caps.clipboard) capNote('The clipboard API is unavailable; Copy buttons fall back to selecting text, which may not work on every browser. You can still download a .txt file.');
   chooseDevice();
 }
+function renderDeviceLine() {
+  $('deviceLine').textContent = runDevice() === 'webgpu'
+    ? 'Running on WebGPU (' + ui.adapterInfo + ') for the encoder, WASM for the decoder.'
+    : (ui.model === 'tiny' && ui.device === 'webgpu' ? 'Running on WASM (Tiny always uses WASM).'
+      : (caps.webgpu ? 'Running on WASM (forced in Settings).' : 'Running on WASM. No WebGPU adapter was found, which is normal on Safari and many laptops.'));
+}
 function chooseDevice() {
   ui.device = caps.webgpu && !$('forceWasm').checked ? 'webgpu' : 'wasm';
-  $('deviceLine').textContent = ui.device === 'webgpu'
-    ? 'Running on WebGPU (' + ui.adapterInfo + ').'
-    : (caps.webgpu ? 'Running on WASM (forced in Settings).' : 'Running on WASM. No WebGPU adapter was found, which is normal on Safari and many laptops.');
+  renderDeviceLine();
   renderModels();
   renderEstimate();
 }
@@ -496,8 +518,8 @@ function detectType(file) {
   const mime = (file.type || '').toLowerCase();
   if (TYPES[ext]) {
     if (!mime || TYPES[ext].mimes.includes(mime) || mime === 'application/octet-stream') return ext;
-    // Extension and MIME disagree: trust the extension only if the MIME is still audio or video.
-    if (/^(audio|video)\//.test(mime)) return ext;
+    // Extension and MIME disagree: trust the extension only if the MIME is the same broad family.
+    if (TYPES[ext].kind === 'text' ? /^text\//.test(mime) : /^(audio|video)\//.test(mime)) return ext;
     return null;
   }
   for (const [k, t] of Object.entries(TYPES)) if (t.mimes.includes(mime)) return k;
@@ -516,8 +538,71 @@ function probeDuration(file, kind) {
     el.src = url;
   });
 }
+// ---------- transcript files (.txt, .vtt, .srt) ----------
+function parseClock(t) {
+  const p = t.trim().replace(',', '.').split(':').map(Number);
+  if (p.some((n) => !isFinite(n))) return null;
+  return p.length === 3 ? p[0] * 3600 + p[1] * 60 + p[2] : p.length === 2 ? p[0] * 60 + p[1] : null;
+}
+function parseTranscriptFile(raw, ext) {
+  const text = raw.replace(/^\uFEFF/, '').replace(/\r\n?/g, '\n');
+  const segs = [];
+  if (ext === 'vtt' || ext === 'srt' || /^WEBVTT/.test(text) || /^\d+\n\d{1,2}:\d{2}:\d{2}[,.]\d{3}\s*-->/m.test(text)) {
+    // Caption files: one cue per block, with a start time line. Teams and Zoom put the speaker in <v Name>.
+    for (const block of text.split(/\n{2,}/)) {
+      const lines = block.split('\n').filter((l) => l.trim());
+      const ti = lines.findIndex((l) => l.includes('-->'));
+      if (ti < 0) continue;
+      const start = parseClock(lines[ti].split('-->')[0]);
+      let body = lines.slice(ti + 1).join(' ');
+      const who = /<v(?:\.[^\s>]*)?\s+([^>]+)>/.exec(body);
+      body = body.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+      if (!body) continue;
+      if (who) body = who[1].trim() + ': ' + body;
+      const prev = segs[segs.length - 1];
+      if (prev && prev.text === body) continue; // rolling captions repeat lines
+      segs.push({ startSec: start == null ? 0 : start, endSec: null, text: body });
+    }
+    return { segs, hasTimes: segs.length > 0 };
+  }
+  // Plain text: lines that start with [mm:ss] or [hh:mm:ss] keep their times; otherwise one paragraph per block.
+  const stamped = /^\s*\[?(\d{1,2}:\d{2}(?::\d{2})?)\]?\s+(.*)$/;
+  const lines = text.split('\n').filter((l) => l.trim());
+  const timed = lines.filter((l) => stamped.test(l)).length;
+  if (lines.length && timed >= lines.length * 0.6) {
+    for (const l of lines) {
+      const m = stamped.exec(l);
+      if (m) segs.push({ startSec: parseClock(m[1]) || 0, endSec: null, text: m[2].trim() });
+      else if (segs.length) segs[segs.length - 1].text += ' ' + l.trim();
+    }
+    return { segs, hasTimes: true };
+  }
+  for (const para of text.split(/\n\s*\n/)) {
+    const t = para.replace(/\s+/g, ' ').trim();
+    if (t) segs.push({ startSec: 0, endSec: null, text: t });
+  }
+  return { segs, hasTimes: false };
+}
+function setTextMode(on) {
+  ui.textMode = on;
+  document.body.classList.toggle('text-mode', on);
+  show($('tsToggleRow'), !on || ui.hasTimes);
+  show($('promptTsRow'), !on || ui.hasTimes);
+}
 function renderIntakeFacts() {
   $('fname').textContent = state.file.name;
+  if (ui.textMode) {
+    $('fType').textContent = TYPES[ui.ext].label + ' transcript';
+    $('fSize').textContent = (state.file.size / 1024).toFixed(1) + ' KB';
+    $('fDur').textContent = ui.hasTimes && state.segments.length ? 'to ' + fmtTime(state.segments[state.segments.length - 1].startSec) : 'no timestamps';
+    $('fSegs').textContent = state.transcriptText.split(/\s+/).filter(Boolean).length.toLocaleString() + ' words';
+    $('fSegs').previousElementSibling.textContent = 'Words';
+    show($('longWarn'), false);
+    $('intakeGo').textContent = 'Use this transcript';
+    $('intakeGo').classList.remove('warn');
+    return;
+  }
+  $('fSegs').previousElementSibling.textContent = 'Segments';
   $('fType').textContent = TYPES[ui.ext].label + ' ' + TYPES[ui.ext].kind;
   $('fSize').textContent = (state.file.size / 1048576).toFixed(1) + ' MB';
   $('fDur').textContent = state.durationSec ? fmtTime(state.durationSec) : 'read in step 2';
@@ -532,11 +617,25 @@ async function acceptFile(file) {
   show($('intakeErr'), false);
   const ext = detectType(file);
   if (!ext) {
-    $('intakeErr').textContent = 'That file type is not supported. Use mp4, mov, m4a, mp3, or wav.';
+    $('intakeErr').textContent = 'That file type is not supported. Use mp4, mov, m4a, mp3, or wav, or a .txt, .vtt, or .srt transcript.';
     show($('intakeErr'), true); return;
   }
   resetAfterIntake();
   state.file = file; ui.ext = ext; ui.longAck = false;
+  if (TYPES[ext].kind === 'text') {
+    if (file.size > TEXT_MAX) { $('intakeErr').textContent = 'That transcript is over 5 MB. Split it into smaller files.'; show($('intakeErr'), true); state.file = null; return; }
+    const { segs, hasTimes } = parseTranscriptFile(await file.text(), ext);
+    if (!segs.length) { $('intakeErr').textContent = 'No transcript text was found in that file.'; show($('intakeErr'), true); state.file = null; return; }
+    ui.hasTimes = hasTimes;
+    setTextMode(true);
+    state.segments = segs; rebuildTranscriptText();
+    show($('intakeInfo'), true);
+    renderIntakeFacts();
+    setChip(1, 'Loaded', 'done');
+    return;
+  }
+  ui.hasTimes = true;
+  setTextMode(false);
   state.durationSec = await probeDuration(file, TYPES[ext].kind);
   show($('intakeInfo'), true);
   renderIntakeFacts();
@@ -549,6 +648,16 @@ function intakeContinue() {
     ui.longAck = true; $('intakeGo').textContent = 'Tap again to confirm'; return;
   }
   $('intakeGo').disabled = true;
+  if (ui.textMode) {
+    // A transcript file skips extraction and transcription entirely.
+    setChip(2, 'Not needed');
+    unlock(3); setChip(3, 'Imported', 'done');
+    renderTranscript(); show($('tOut'), true);
+    $('st3').textContent = 'Transcript loaded from ' + TYPES[ui.ext].label + ' file: ' + state.transcriptText.split(/\s+/).filter(Boolean).length.toLocaleString() + ' words.';
+    unlock(4); buildPrompt();
+    $('s4').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return;
+  }
   unlock(2);
   $('s2').scrollIntoView({ behavior: 'smooth', block: 'start' });
   prepareExtract();
@@ -697,35 +806,68 @@ function renderModels() {
     b.setAttribute('aria-pressed', String(k === ui.model));
     b.appendChild(document.createTextNode(m.label));
     const s = document.createElement('small');
-    const mb = m.mb[ui.device];
+    const mb = m.mb[k === 'tiny' ? 'wasm' : ui.device];
     s.textContent = (mb ? 'about ' + mb + ' MB, ' : '') + m.note.toLowerCase();
     b.appendChild(s);
-    b.addEventListener('click', () => { if (ui.busy) return; ui.model = k; renderModels(); renderEstimate(); });
+    b.addEventListener('click', () => { if (ui.busy) return; ui.model = k; renderModels(); renderEstimate(); renderDeviceLine(); });
     seg.appendChild(b);
   }
 }
 function renderEstimate() {
   const d = state.durationSec;
   if (!d) { $('estimate').textContent = ''; return; }
-  const r = MODELS[ui.model].rtf[ui.device];
+  const r = MODELS[ui.model].rtf[runDevice()];
   $('estimate').textContent = 'Rough estimate for ' + fmtTime(d) + ' of audio: ' + fmtTime(d * r * 0.5) + ' to ' + fmtTime(d * r * 2) + ' after the model downloads. Refined after the first segment.';
 }
-function absChunks(chunks, offset, segEnd, isLast, prevEnd) {
-  // Shift to absolute time, keep chunks that start inside this segment's own 10 minutes,
-  // and drop anything the previous segment already covered.
-  const out = [];
+function collapseRepeats(text) {
+  // Whisper can fall into a loop and emit the same phrase many times. Three or more identical
+  // back to back runs of 4 or more words are collapsed to one; normal speech almost never does this.
+  const w = text.split(/\s+/);
+  for (let size = Math.min(30, Math.floor(w.length / 3)); size >= 4; size--) {
+    for (let i = 0; i + size * 3 <= w.length; i++) {
+      const key = w.slice(i, i + size).join(' ').toLowerCase();
+      let reps = 1;
+      while (w.slice(i + size * reps, i + size * (reps + 1)).join(' ').toLowerCase() === key) reps++;
+      if (reps >= 3) w.splice(i + size, size * (reps - 1));
+    }
+  }
+  return w.join(' ');
+}
+function trimOverlap(prev, next) {
+  const norm = (w) => w.toLowerCase().replace(/[^a-z0-9']/g, '');
+  const a = prev.split(/\s+/).filter(Boolean).slice(-15).map(norm);
+  const words = next.split(/\s+/).filter(Boolean);
+  const b = words.map(norm);
+  for (let k = Math.min(a.length, b.length, 15); k >= 2; k--) {
+    if (a.slice(a.length - k).join(' ') === b.slice(0, k).join(' ')) return words.slice(k).join(' ');
+  }
+  // Allow the repeated run to start a word or two into the new chunk (a clipped first word).
+  for (let skip = 1; skip <= 2; skip++) {
+    for (let k = Math.min(a.length, b.length - skip, 15); k >= 1; k--) {
+      if (a.slice(a.length - k).join(' ') === b.slice(skip, skip + k).join(' ')) return words.slice(skip + k).join(' ');
+    }
+  }
+  return next;
+}
+function keepChunks(chunks, offset, segEnd, isLast) {
+  // Shift Whisper's chunk times to absolute time. In a middle segment keep only chunks that ended at
+  // least a second before the cut; the next segment restarts at the last kept end.
+  const kept = [];
+  let lastEnd = offset;
   for (const c of chunks) {
     const s = (c.s == null ? 0 : c.s) + offset;
-    const e = (c.e == null ? segEnd + OVERLAP_SEC : c.e + offset);
-    const text = (c.text || '').trim();
-    if (!text) continue;
-    if (!isLast && s >= segEnd) continue;
-    if (s < prevEnd - 0.75) continue;
-    out.push({ startSec: s, endSec: e, text });
+    const e = c.e == null ? null : c.e + offset;
+    if (!isLast && (e == null || e > segEnd - 1)) break;
+    const text = collapseRepeats((c.text || '').trim());
+    if (e != null) lastEnd = Math.max(lastEnd, e);
+    if (text) kept.push({ startSec: s, endSec: e == null ? segEnd : e, text });
   }
-  return out;
+  // No usable chunk (silence or one endless sentence): move on by a full segment so the loop progresses.
+  const nextStart = !isLast && lastEnd - offset < 60 ? offset + SEG_SEC : Math.max(offset + 60, lastEnd - BACKOFF_SEC);
+  return { kept, nextStart };
 }
 function renderTranscript() {
+  if (ui.textMode && !ui.hasTimes) { $('transcript').textContent = state.segments.map((c) => c.text).join('\n\n'); return; }
   const ts = $('tsToggle').checked;
   $('transcript').textContent = ts
     ? state.segments.map((c) => mmss(c.startSec) + ' ' + c.text).join('\n')
@@ -746,8 +888,8 @@ async function transcribe() {
     $('st3').textContent = 'Starting the speech engine.';
     await wCall({ type: 'init', libURL: abs('vendor/transformers/transformers.min.js'), wasmPaths: abs('vendor/ort/'), modelsURL: abs('models/') });
     const files = {};
-    $('st3').textContent = 'Loading ' + m.label + ' on ' + ui.device.toUpperCase() + '.';
-    await wCall({ type: 'load', model: ui.model, modelId: m.id, device: ui.device, dtype: DTYPE[ui.device], modelsURL: abs('models/') }, null, (p) => {
+    $('st3').textContent = 'Loading ' + m.label + (runDevice() === 'webgpu' ? ' on WebGPU and WASM.' : ' on WASM.');
+    await wCall({ type: 'load', model: ui.model, modelId: m.id, device: DEVICE_MAP[runDevice()], dtype: DTYPE[runDevice()], modelsURL: abs('models/') }, null, (p) => {
       files[p.file] = p; let l = 0, t = 0;
       for (const f of Object.values(files)) { l += f.loaded || 0; t += f.total || 0; }
       if (t) { meter('m3', l / t); $('st3').textContent = 'Downloading model: ' + (l / 1048576).toFixed(1) + ' of ' + (t / 1048576).toFixed(1) + ' MB'; }
@@ -757,39 +899,52 @@ async function transcribe() {
     if (ui.fallback) { $('st3').textContent = 'Decoding audio with the browser decoder.'; meterIndet('m2'); fallbackSamples = await decodeFallback(); meter('m2', 1); }
     else path = await mountInput();
     const total = state.durationSec;
-    const n = Math.max(1, Math.ceil(total / SEG_SEC));
-    let prevEnd = 0, audioDone = 0, workSec = 0;
-    for (let i = 0; i < n; i++) {
+    // Each segment reads up to 10 minutes plus OVERLAP_SEC. Only chunks that Whisper closed before the
+    // cut are kept, and the next segment starts exactly where the last kept chunk ended, so a sentence
+    // that straddles a boundary is transcribed once, whole, by the following segment.
+    let start = 0, i = 0, audioDone = 0, workSec = 0;
+    const segsLeft = (from) => Math.max(1, Math.ceil((total - from) / SEG_SEC));
+    while (start < total - 0.25) {
       if (!alive()) return;
-      const start = i * SEG_SEC, isLast = i === n - 1;
+      const n = i + segsLeft(start);
       const len = Math.min(SEG_SEC + OVERLAP_SEC, total - start + 1);
+      const isLast = start + len >= total;
       const t0 = performance.now();
       let samples;
       if (fallbackSamples) {
         const a = Math.floor(start * 16000), b = Math.min(fallbackSamples.length, Math.floor((start + len) * 16000));
         samples = fallbackSamples.slice(a, b);
-        $('st2').textContent = 'Segment ' + (i + 1) + ' of ' + n + ' sliced from the decoded audio.'; meter('m2', (i + 1) / n);
+        $('st2').textContent = 'Segment ' + (i + 1) + ' of ' + n + ' sliced from the decoded audio.';
       } else {
         $('st2').textContent = 'Extracting segment ' + (i + 1) + ' of ' + n + '.';
-        samples = await extractSegment(path, start, len, (f) => meter('m2', (i + f) / n));
-        meter('m2', (i + 1) / n);
+        samples = await extractSegment(path, start, len, (f) => meter('m2', Math.min(1, (start + f * len) / total)));
       }
+      meter('m2', Math.min(1, (start + len) / total));
       if (!alive()) return;
       const segAudio = samples.length / 16000;
       $('st3').textContent = 'Transcribing segment ' + (i + 1) + ' of ' + n + '.' + (workSec ? ' About ' + fmtTime((total - audioDone) * (workSec / audioDone)) + ' left.' : '');
-      meter('m3', i / n);
+      meter('m3', start / total);
       const res = await wCall({ type: 'transcribe', samples }, [samples.buffer]);
       samples = null;
       if (!alive()) return;
-      const kept = absChunks(res.chunks, start, start + SEG_SEC, isLast, prevEnd);
-      if (kept.length) prevEnd = kept[kept.length - 1].endSec;
+      const { kept, nextStart } = keepChunks(res.chunks, start, start + segAudio, isLast);
+      if (kept.length && state.segments.length) {
+        // This segment re-read the last BACKOFF_SEC of the previous one. A first chunk that lies wholly
+        // inside that re-read stretch is dropped; otherwise words repeating the previous tail are trimmed.
+        const prev = state.segments[state.segments.length - 1];
+        if (kept[0].endSec <= prev.endSec + 0.75) kept.shift();
+        if (kept.length) { kept[0].text = trimOverlap(prev.text, kept[0].text); if (!kept[0].text) kept.shift(); }
+      }
       state.segments.push(...kept);
       rebuildTranscriptText(); renderTranscript(); show($('tOut'), true);
-      audioDone += Math.min(SEG_SEC, segAudio); workSec += (performance.now() - t0) / 1000;
-      const rtf = workSec / audioDone;
-      $('estimate').textContent = 'Measured speed: ' + rtf.toFixed(2) + ' s of work per second of audio.';
-      meter('m3', (i + 1) / n);
+      audioDone += (isLast ? segAudio : nextStart - start); workSec += (performance.now() - t0) / 1000;
+      $('estimate').textContent = 'Measured speed: ' + (workSec / audioDone).toFixed(2) + ' s of work per second of audio.';
+      meter('m3', Math.min(1, nextStart / total));
+      i++;
+      if (isLast) break;
+      start = nextStart;
     }
+    const n = i;
     fallbackSamples = null;
     if (!state.transcriptText) throw new Error('No speech was recognized in this recording.');
     $('st3').textContent = 'Done. ' + state.transcriptText.split(/\s+/).filter(Boolean).length + ' words transcribed in ' + fmtTime(workSec) + '.';
@@ -828,7 +983,8 @@ function neutralizeTags(t) {
 }
 function buildPrompt() {
   const t = TEMPLATES[state.template];
-  const body = $('promptTs').checked ? state.segments.map((c) => mmss(c.startSec) + ' ' + c.text).join('\n') : state.transcriptText;
+  const body = ($('promptTs').checked && ui.hasTimes) ? state.segments.map((c) => mmss(c.startSec) + ' ' + c.text).join('\n')
+    : (ui.textMode && !ui.hasTimes ? state.segments.map((c) => c.text).join('\n\n') : state.transcriptText);
   // Plain string concatenation; user text is never evaluated.
   const parts = FRAME.split('{TRANSCRIPT}');
   promptText = parts[0].split('{DOC_TYPE}').join(t.docType).split('{STRUCTURE}').join(t.structure) + neutralizeTags(body) + parts[1];
@@ -844,29 +1000,46 @@ async function onCopyPrompt() {
   if (ok) { setChip(4, 'Copied', 'done'); unlock(5); }
 }
 async function getDefaultModel() {
-  try { const r = await fetch('https://augustineiacopelli.github.io/appaday/config.json', { cache: 'no-cache' }); const c = await r.json(); return c.models.sonnet; }
-  catch (e) { return 'claude-sonnet-5-5'; }
+  return window.AppModels ? window.AppModels.get('sonnet') : '';
 }
 function syncApiPanel() {
-  const k = $('apiKey').value.trim();
-  state.apiKey = k || null;
-  show($('apiPanel'), !!state.apiKey);
+  show($('apiPanel'), !!(window.AppKeys && window.AppKeys.has()));
   $('apiModelName').textContent = $('apiModel').value.trim() || 'the model in Settings';
 }
+// Models differ in how thinking is switched off: current Sonnet models want {type:'between_tools'} and
+// reject {type:'disabled'}, older ones want 'disabled', and some accept neither. Try each in turn, but
+// only when the 400 error is about the thinking field, and remember what worked for each model.
+const THINKING_OPTIONS = [{ type: 'between_tools' }, { type: 'disabled' }, null];
+const thinkingFor = {};
+async function callClaude(model, prompt, apiKey) {
+  const start = thinkingFor[model] != null ? thinkingFor[model] : 0;
+  let lastErr = null;
+  for (let i = start; i < THINKING_OPTIONS.length; i++) {
+    const body = { model, max_tokens: 8000, messages: [{ role: 'user', content: prompt }] };
+    if (THINKING_OPTIONS[i]) body.thinking = THINKING_OPTIONS[i];
+    const r = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify(body),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.ok) { thinkingFor[model] = i; return j; }
+    const msg = (j.error && j.error.message) || ('HTTP ' + r.status);
+    lastErr = new Error(msg);
+    if (!(r.status === 400 && /thinking/i.test(msg))) throw lastErr;
+  }
+  throw lastErr;
+}
 async function onApiSend() {
-  if (!state.apiKey) return;
+  if (!window.AppKeys || !window.AppKeys.has()) return;
   if (!sendArmed) { show($('leaveNote'), true); sendArmed = true; $('apiSend').textContent = 'I understand, send'; return; }
   sendArmed = false; $('apiSend').textContent = 'Send with API'; $('apiSend').disabled = true;
   const model = $('apiModel').value.trim();
   $('apiStatus').textContent = 'Sending to ' + model + '. Long transcripts can take a minute.';
   try {
-    const r = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-api-key': state.apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model, max_tokens: 8000, thinking: { type: 'disabled' }, messages: [{ role: 'user', content: promptText }] }),
-    });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error((j.error && j.error.message) || ('HTTP ' + r.status));
+    const apiKey = await window.AppKeys.get();
+    if (!apiKey) throw new Error('No Claude API key is saved. Add one in Settings.');
+    const j = await callClaude(model, promptText, apiKey);
     const text = (j.content || []).filter((b) => b.type === 'text').map((b) => b.text).join('\n').trim();
     if (!text) throw new Error('The reply had no text (stop reason ' + j.stop_reason + ').');
     $('output').value = text; onOutputInput();
@@ -998,8 +1171,9 @@ async function clearAll() {
   resetAfterIntake();
   if (ff) { try { ff.terminate(); } catch (e) {} ff = null; ffLoading = null; }
   for (const u of ui.urls) URL.revokeObjectURL(u); ui.urls.clear();
-  state.file = null; state.durationSec = null; state.template = 'training'; state.apiKey = null; ui.ext = null; ui.longAck = false;
-  $('apiKey').value = ''; syncApiPanel();
+  state.file = null; state.durationSec = null; state.template = 'training'; ui.ext = null; ui.longAck = false;
+  ui.hasTimes = false; setTextMode(false);
+  syncApiPanel();
   $('picker').value = '';
   ['fname', 'fType', 'fSize', 'fDur', 'fSegs'].forEach((i) => { $(i).textContent = ''; });
   show($('intakeInfo'), false); show($('intakeErr'), false); show($('longWarn'), false);
@@ -1021,7 +1195,7 @@ async function renderDiagnostics() {
   if (ui.adapterInfo) lines.push('adapter ' + ui.adapterInfo);
   lines.push('module worker ' + caps.moduleWorker + ', clipboard ' + caps.clipboard + ', crossOriginIsolated ' + self.crossOriginIsolated);
   for (const m of Object.values(MODELS)) lines.push(m.id + ' source ' + abs('models/') + ' revision ' + ((revs[m.id] && revs[m.id].sha) || 'unknown'));
-  lines.push('model in use ' + ui.model + ', dtype ' + JSON.stringify(DTYPE[ui.device]));
+  lines.push('model in use ' + ui.model + ', device ' + JSON.stringify(DEVICE_MAP[runDevice()]) + ', dtype ' + JSON.stringify(DTYPE[runDevice()]));
   lines.push('user agent ' + navigator.userAgent);
   $('diag').textContent = lines.join('\n');
 }
@@ -1061,11 +1235,11 @@ $('dlDocx').addEventListener('click', async () => {
   catch (e) { $('st5').textContent = 'Word export failed: ' + e.message; }
 });
 $('clearBtn').addEventListener('click', clearAll);
-$('gearBtn').addEventListener('click', () => $('settingsDlg').showModal());
+$('gearBtn').addEventListener('click', () => { if (window.AppKeys) window.AppKeys.mountSettings($('keyMount')); $('settingsDlg').showModal(); });
 $('aboutBtn').addEventListener('click', () => { renderDiagnostics(); $('aboutDlg').showModal(); });
 document.querySelectorAll('dialog [data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 document.querySelectorAll('dialog').forEach((d) => d.addEventListener('click', (e) => { if (e.target === d) d.close(); }));
-$('apiKey').addEventListener('input', syncApiPanel);
+window.addEventListener('appaday:keychange', syncApiPanel);
 $('apiModel').addEventListener('input', syncApiPanel);
 $('forceWasm').addEventListener('change', () => { if (!ui.busy) { killWhisper(); chooseDevice(); } });
 $('copyDiag').addEventListener('click', async () => { await copyText($('diag').textContent); });

@@ -17,7 +17,7 @@
 <p>
   <select id="lib"><option value="v3">Transformers.js 3.8.1 (vendor/)</option><option value="v4">Transformers.js 4.3.1 (candidate)</option></select>
   <select id="model"><option>whisper-base</option><option>whisper-tiny</option></select>
-  <select id="device"><option value="auto">auto</option><option value="webgpu">webgpu</option><option value="wasm">wasm</option></select>
+  <select id="device"><option value="auto">auto</option><option value="webgpu">webgpu</option><option value="wasm">wasm</option><option value="hybrid">hybrid</option></select>
   <select id="clip"><option value="ref-3min.mp3">ref-3min.mp3</option><option value="clip-45s.wav">clip-45s.wav</option><option value="smoke-10s.wav">smoke-10s.wav</option></select>
   <button id="go">Run</button>
 </p>
@@ -38,8 +38,9 @@ self.onmessage = async ({ data }) => {
       if (k !== key) {
         const t0 = performance.now();
         pipe = await pipeline('automatic-speech-recognition', 'onnx-community/' + data.model, {
-          device: data.device,
-          dtype: data.device === 'webgpu' ? { encoder_model: 'fp32', decoder_model_merged: 'q8' } : 'q8',
+          // hybrid: encoder on the GPU in fp32, q8 decoder on WASM.
+          device: data.device === 'hybrid' ? { encoder_model: 'webgpu', decoder_model_merged: 'wasm' } : data.device,
+          dtype: data.device === 'wasm' ? 'q8' : { encoder_model: 'fp32', decoder_model_merged: 'q8' },
         });
         key = k;
         self.postMessage({ type: 'loaded', seconds: (performance.now() - t0) / 1000, version: env.version });

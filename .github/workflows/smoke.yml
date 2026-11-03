@@ -6,12 +6,19 @@ on:
   push:
     branches: [main]
     paths-ignore: ['spikes/results/**']
+  pull_request:
+    branches: [main]
 jobs:
   smoke:
-    runs-on: ubuntu-latest
+    name: smoke (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && fromJSON('["ubuntu-24.04","ubuntu-latest"]') || fromJSON('["ubuntu-24.04"]') }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
           node-version: 22

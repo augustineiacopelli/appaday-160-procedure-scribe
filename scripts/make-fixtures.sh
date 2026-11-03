@@ -39,10 +39,23 @@ for n in $(seq 1 40); do echo "Sentence $n. Record the item count on line $n of 
 espeak-ng -v en-us -s 150 -f /tmp/ref.txt -w /tmp/ref.wav
 ffmpeg -loglevel error -y -i /tmp/ref.wav -t 180 -ac 1 -ar 16000 -c:a libmp3lame -b:a 48k "$F/ref-3min.mp3"
 
-# 4. Twenty five minute recording for the 10 minute boundary test.
+# 4. Twenty five minute recording for the 10 minute boundary test. Sentences vary so Whisper does not
+#    fall into a repetition loop, and every one carries a rising marker number to check order and gaps.
+T=("check that the front door is locked and the alarm panel shows green"
+   "write today's date and your initials on the sign in sheet"
+   "turn on the projector, then wait for the blue welcome screen"
+   "count the chairs and report anything broken to facilities"
+   "restock the printer with letter paper from the second shelf"
+   "open the scheduling system and confirm the evening room bookings"
+   "test the microphone at the lectern before the first class arrives"
+   "set the thermostat to seventy two degrees during open hours"
+   "empty the recycling bin into the large blue cart by the dock"
+   "send a short summary email to the director before noon"
+   "lock the supply closet and return the key to the front desk"
+   "note any visitor questions in the shared handoff document")
 : > /tmp/long.txt
-for n in $(seq 1 330); do echo "Marker $n. Check the door, the lights, and the thermostat in room $n." >> /tmp/long.txt; done
-espeak-ng -v en-us -s 150 -f /tmp/long.txt -w /tmp/long.wav
+for n in $(seq 1 300); do echo "Marker $n. ${T[$(( (n * 7) % 12 ))]}." >> /tmp/long.txt; done
+espeak-ng -v en-us -s 140 -g 4 -f /tmp/long.txt -w /tmp/long.wav
 ffmpeg -loglevel error -y -i /tmp/long.wav -t 1500 -ac 1 -ar 16000 -c:a libmp3lame -b:a 32k "$F/long-25min.mp3"
 ffprobe -v error -show_entries format=duration -of csv=p=0 "$F/long-25min.mp3"
 ls -la "$F"

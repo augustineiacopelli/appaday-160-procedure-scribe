@@ -25,8 +25,8 @@ self.addEventListener('fetch', (e) => {
     })));
     return;
   }
-  // Page and small JSON: network first, cache as fallback.
-  e.respondWith(fetch(req).then((res) => {
+  // Page and small JSON: network first (revalidated, so a new release shows up at once), cache as fallback.
+  e.respondWith(fetch(req.url, { cache: 'no-cache', credentials: 'same-origin' }).then((res) => {
     if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(req, copy)); }
     return res;
   }).catch(() => caches.match(req)));
