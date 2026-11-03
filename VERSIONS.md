@@ -31,3 +31,7 @@ Last smoke test passed by hand: 2026-10-14.
 3. Run the Gates workflow and compare `spikes/results/ci-chromium.json` against the previous run: same chunk count, same text.
 4. Run the smoke test and `npx playwright test acceptance` against a local server (`BASE_URL=http://127.0.0.1:8080/`).
 5. Update this file, merge, and tag a new release. Rolling back means checking out the last good tag and pushing it to `main`.
+
+## November 3, 2026 maintenance
+
+ubuntu-latest moved to Ubuntu 26.04, which Playwright 1.56.1 could not install on, so the scheduled smoke test failed on November 2. The smoke job is now pinned to ubuntu-24.04, runs on pull requests, and adds an ubuntu-latest canary on scheduled and manual runs. Merged @playwright/test 1.64.1, actions/checkout v7, and actions/setup-node v7; both jobs pass. Transformers.js stays on 3.8.1 and onnxruntime-web on its paired build until Gate 2 is rerun, and dependabot.yml ignores both. Runtime libraries are never merged straight from Dependabot; test tooling and actions merge once the smoke test passes on the PR.
