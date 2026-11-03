@@ -1,6 +1,7 @@
 version: 2
 updates:
-  # Dependabot PRs are never merged directly. Each one triggers the upgrade procedure in README.md.
+  # Runtime libraries (docx, ffmpeg, transformers, fonts): never merge directly; follow the upgrade procedure in VERSIONS.md.
+  # Test tooling (@playwright/test) and GitHub actions: merge once the smoke test passes on the PR.
   - package-ecosystem: npm
     directory: /
     schedule:
